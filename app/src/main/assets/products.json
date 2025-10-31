@@ -1,0 +1,93 @@
+[
+  {
+    "codigo": "JM001",
+    "categoria": "juegos-mesa",
+    "nombre": "Catan",
+    "precio": 29990,
+    "imagen": "",
+    "descripcion": "Estrategia en la isla de Catan.",
+    "stock": 15,
+    "destacado": true
+  },
+  {
+    "codigo": "JM002",
+    "categoria": "juegos-mesa",
+    "nombre": "Carcassonne",
+    "precio": 24990,
+    "imagen": "",
+    "descripcion": "Colocación de fichas estilo medieval.",
+    "stock": 20
+  },
+  {
+    "codigo": "AC001",
+    "categoria": "accesorios",
+    "nombre": "Controlador Inalámbrico Xbox Series X",
+    "precio": 59990,
+    "imagen": "",
+    "descripcion": "Botones mapeables y respuesta táctil.",
+    "stock": 10
+  },
+  {
+    "codigo": "AC002",
+    "categoria": "accesorios",
+    "nombre": "Auriculares Gamer HyperX Cloud II",
+    "precio": 79990,
+    "imagen": "",
+    "descripcion": "Sonido envolvente y micrófono desmontable.",
+    "stock": 8
+  },
+  {
+    "codigo": "CO001",
+    "categoria": "consolas",
+    "nombre": "PlayStation 5",
+    "precio": 549990,
+    "imagen": "",
+    "descripcion": "Consola next‑gen de Sony.",
+    "stock": 5
+  },
+  {
+    "codigo": "CG001",
+    "categoria": "computadores",
+    "nombre": "PC Gamer ASUS ROG Strix",
+    "precio": 1299990,
+    "imagen": "",
+    "descripcion": "Alto rendimiento para juegos exigentes.",
+    "stock": 3
+  },
+  {
+    "codigo": "SG001",
+    "categoria": "sillas",
+    "nombre": "Silla Gamer Secretlab Titan",
+    "precio": 349990,
+    "imagen": "",
+    "descripcion": "Ergonómica y ajustable.",
+    "stock": 6
+  },
+  {
+    "codigo": "MS001",
+    "categoria": "mouse",
+    "nombre": "Mouse Gamer Logitech G502 HERO",
+    "precio": 49990,
+    "imagen": "",
+    "descripcion": "Sensor de alta precisión.",
+    "stock": 12
+  },
+  {
+    "codigo": "MP001",
+    "categoria": "mousepad",
+    "nombre": "Mousepad Razer Goliathus Extended Chroma",
+    "precio": 29990,
+    "imagen": "",
+    "descripcion": "Superficie amplia con RGB.",
+    "stock": 9
+  },
+  {
+    "codigo": "PP001",
+    "categoria": "poleras",
+    "nombre": "Polera Gamer Personalizada 'Level‑Up'",
+    "precio": 14990,
+    "imagen": "",
+    "descripcion": "Personalizable con gamer tag.",
+    "stock": 25
+  }
+]

@@ -1,0 +1,18 @@
+package com.levelup.gamer.navigation
+
+import androidx.compose.runtime.Composable
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import com.levelup.gamer.screens.*
+
+@Composable
+fun AppNav(nav: NavHostController) {
+    NavHost(navController = nav, startDestination = Route.Login.name) {
+        composable(Route.Login.name) { LoginScreen(onLogged = { nav.navigate(Route.Catalogo.name) { popUpTo(0) } }, onGoRegister = { nav.navigate(Route.Register.name) }) }
+        composable(Route.Register.name) { RegisterScreen(onRegistered = { nav.popBackStack() }) }
+        composable(Route.Catalogo.name) { CatalogoScreen(onGoCart = { nav.navigate(Route.Carrito.name) }, onGoPerfil = { nav.navigate(Route.Perfil.name) }) }
+        composable(Route.Carrito.name) { CarritoScreen(onBack = { nav.popBackStack() }) }
+        composable(Route.Perfil.name) { PerfilScreen(onLogout = { nav.navigate(Route.Login.name) { popUpTo(0) } }) }
+    }
+}
