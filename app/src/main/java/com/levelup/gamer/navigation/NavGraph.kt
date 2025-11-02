@@ -8,7 +8,7 @@ import com.levelup.gamer.screens.*
 
 @Composable
 fun AppNav(nav: NavHostController) {
-    // TEMP: arrancamos directo en Login para verificar que la app abre
+
     NavHost(navController = nav, startDestination = Route.Login.name) {
 
         composable(Route.Login.name) {

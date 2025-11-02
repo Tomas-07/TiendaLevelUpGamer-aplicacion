@@ -13,6 +13,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.levelup.gamer.model.Usuario
 import com.levelup.gamer.ui.deps
+import com.levelup.gamer.viewmodel.UsuarioVM
 
 @Composable
 fun LoginScreen(
@@ -110,3 +111,5 @@ fun LoginScreen(
         }
     }
 }
+
+fun UsuarioVM.login(usuario: Usuario) {}
