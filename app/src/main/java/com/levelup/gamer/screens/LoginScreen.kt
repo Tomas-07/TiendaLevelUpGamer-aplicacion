@@ -2,34 +2,23 @@
 package com.levelup.gamer.screens
 
 import android.util.Patterns
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import com.levelup.gamer.model.Usuario
 import com.levelup.gamer.ui.deps
 
 @Composable
-fun LoginScreen(onLogged: () -> Unit, onGoRegister: () -> Unit) {
+fun LoginScreen(
+    onLogin: () -> Unit,
+    onGoRegister: () -> Unit
+) {
     val d = deps()
 
     var email by remember { mutableStateOf(TextFieldValue("")) }
@@ -63,9 +52,8 @@ fun LoginScreen(onLogged: () -> Unit, onGoRegister: () -> Unit) {
             modifier = Modifier.fillMaxWidth(),
             isError = showEmailError || (correo.isNotEmpty() && !isEmailValid),
             supportingText = {
-                when {
-                    showEmailError || (correo.isNotEmpty() && !isEmailValid) ->
-                        Text("Correo inválido (ej: nombre@dominio.com)")
+                if (showEmailError || (correo.isNotEmpty() && !isEmailValid)) {
+                    Text("Correo inválido (ej: nombre@dominio.com)")
                 }
             },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
@@ -83,9 +71,8 @@ fun LoginScreen(onLogged: () -> Unit, onGoRegister: () -> Unit) {
             modifier = Modifier.fillMaxWidth(),
             isError = showNombreError || (nombreOk.isEmpty() && nombre.text.isNotEmpty()),
             supportingText = {
-                when {
-                    showNombreError || (nombreOk.isEmpty() && nombre.text.isNotEmpty()) ->
-                        Text("El nombre no puede estar vacío")
+                if (showNombreError || (nombreOk.isEmpty() && nombre.text.isNotEmpty())) {
+                    Text("El nombre no puede estar vacío")
                 }
             },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done)
@@ -99,13 +86,18 @@ fun LoginScreen(onLogged: () -> Unit, onGoRegister: () -> Unit) {
                 if (!isNombreValid) showNombreError = true
                 if (!isFormValid) return@Button
 
-                d.usuarioVM.login(
-                    nombreOk,
-                    correo,
-                    99,
-                    null
+
+                val usuario = Usuario(
+                    nombre = nombreOk,
+                    email = correo,
+                    edad = 99,
+                    esDuoc = false,
+                    puntos = 0,
+                    nivel = 1,
+                    referidoPor = null
                 )
-                onLogged()
+                d.usuarioVM.login(usuario)
+                onLogin()
             },
             modifier = Modifier.fillMaxWidth(),
             enabled = isFormValid
