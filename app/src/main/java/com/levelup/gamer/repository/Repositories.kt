@@ -126,7 +126,7 @@ class ReviewRepository(private val context: Context) {
             val kC = intPreferencesKey(KEY_PREFIX + code + KEY_COUNT)
             val curS = p[kS] ?: 0f
             val curC = p[kC] ?: 0
-            // Simple running average
+
             val newC = curC + 1
             val newS = (curS * curC + stars) / newC
             p[kS] = newS

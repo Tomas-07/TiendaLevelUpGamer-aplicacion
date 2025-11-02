@@ -18,7 +18,7 @@ fun RegisterScreen(onRegistered: ()->Unit) {
     var edad by remember { mutableStateOf(TextFieldValue("")) }
     var referido by remember { mutableStateOf(TextFieldValue("")) }
     var err by remember { mutableStateOf<String?>(null) }
-    Column(Modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+    Column(Modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) Button@{
         Text("Crear cuenta (solo 18+)", style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(12.dp))
         OutlinedTextField(nombre, { nombre = it }, label = { Text("Nombre") }, modifier = Modifier.fillMaxWidth())
@@ -30,6 +30,11 @@ fun RegisterScreen(onRegistered: ()->Unit) {
         OutlinedTextField(referido, { referido = it }, label = { Text("Código de referido (opcional)") }, modifier = Modifier.fillMaxWidth())
         err?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         Spacer(Modifier.height(12.dp))
+        val correo = email.text.trim()
+        if (correo.isBlank() || !android.util.Patterns.EMAIL_ADDRESS.matcher(correo).matches()) {
+            err = "Correo inválido. Ej: nombre@dominio.com"
+            return@Button
+        }
         Button(onClick = {
             val e = edad.text.toIntOrNull() ?: 0
             if (e < 18) { err = "Debes ser mayor de 18 años."; return@Button }
