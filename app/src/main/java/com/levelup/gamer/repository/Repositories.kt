@@ -51,7 +51,6 @@ class ProductoRepository(private val context: Context) {
             (max == null || p.precio <= max)
         }
 }
-
 class SessionRepository(private val context: Context) {
     companion object {
         val KEY_NAME = stringPreferencesKey("name")
@@ -134,3 +133,4 @@ class ReviewRepository(private val context: Context) {
         }
     }
 }
+

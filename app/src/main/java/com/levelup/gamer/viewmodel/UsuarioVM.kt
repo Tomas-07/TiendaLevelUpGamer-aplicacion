@@ -1,56 +1,82 @@
-package com.levelup.gamer.viewmodel
+class SessionRepository(private val context: Context) {
+    companion object {
+        val KEY_NAME = stringPreferencesKey("name")
+        val KEY_EMAIL = stringPreferencesKey("email")
+        val KEY_AGE = intPreferencesKey("age")
+        val KEY_DUOC = booleanPreferencesKey("duoc")
+        val KEY_PUNTOS = intPreferencesKey("puntos")
+        val KEY_NIVEL = intPreferencesKey("nivel")
+        val KEY_REFERIDO = stringPreferencesKey("referido")
+    }
 
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.levelup.gamer.model.Usuario
-import com.levelup.gamer.repository.SessionRepository
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
+    val isLoggedIn: Flow<Boolean> = context.dataStore.data.map { it[KEY_EMAIL] != null }
+    val nombre: Flow<String> = context.dataStore.data.map { it[KEY_NAME] ?: "" }
+    val email: Flow<String> = context.dataStore.data.map { it[KEY_EMAIL] ?: "" }
+    val edad: Flow<Int> = context.dataStore.data.map { it[KEY_AGE] ?: 0 }
+    val esDuoc: Flow<Boolean> = context.dataStore.data.map { it[KEY_DUOC] ?: false }
+    val puntos: Flow<Int> = context.dataStore.data.map { it[KEY_PUNTOS] ?: 0 }
+    val nivel: Flow<Int> = context.dataStore.data.map { it[KEY_NIVEL] ?: 1 }
+    val referidoPor: Flow<String?> = context.dataStore.data.map { it[KEY_REFERIDO] }
 
-class UsuarioVM(private val session: SessionRepository) : ViewModel() {
-
-    val isLogged: StateFlow<Boolean> =
-        session.isLoggedIn.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
-    val nombre: StateFlow<String> =
-        session.nombre.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
-    val email: StateFlow<String> =
-        session.email.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
-    val edad: StateFlow<Int> =
-        session.edad.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
-    val puntos: StateFlow<Int> =
-        session.puntos.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
-    val nivel: StateFlow<Int> =
-        session.nivel.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1)
-    val esDuoc: StateFlow<Boolean> =
-        session.esDuoc.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
-
-    fun login(nombre: String, email: String, edad: Int, referido: String?) {
-
-        val correo = email.lowercase()
-        val duoc = correo.endsWith("@duoc.cl") || correo.endsWith("@duocuc.cl")
-
-        viewModelScope.launch {
-            session.login(
-                Usuario(
-                    nombre = nombre,
-                    email = email,
-                    edad = edad,
-                    referidoPor = referido,
-                    puntos = if (referido?.isNotBlank() == true) 50 else 0,
-                    nivel = 1,
-                    esDuoc = duoc
-                )
-            )
+    suspend fun login(user: Usuario) {
+        context.dataStore.edit { p ->
+            p[KEY_NAME] = user.nombre
+            p[KEY_EMAIL] = user.email
+            p[KEY_AGE] = user.edad
+            p[KEY_DUOC] = user.esDuoc
+            p[KEY_PUNTOS] = user.puntos
+            p[KEY_NIVEL] = user.nivel
+            user.referidoPor?.let { p[KEY_REFERIDO] = it }
         }
     }
 
-    fun logout() {
-        viewModelScope.launch { session.logout() }
+    suspend fun logout() {
+        context.dataStore.edit { it.clear() }
     }
 
-    fun addPuntos(p: Int) {
-        viewModelScope.launch { session.addPuntos(p) }
+    suspend fun addPuntos(delta: Int) {
+        context.dataStore.edit { p ->
+            val cur = p[KEY_PUNTOS] ?: 0
+            val total = (cur + delta).coerceAtLeast(0)
+            p[KEY_PUNTOS] = total
+            p[KEY_NIVEL] = calcNivel(total)
+        }
+    }
+
+    private fun calcNivel(p: Int): Int = when {
+        p >= 1000 -> 5
+        p >= 600 -> 4
+        p >= 300 -> 3
+        p >= 120 -> 2
+        else -> 1
+    }
+}
+
+class ReviewRepository(private val context: Context) {
+    private val KEY_PREFIX = "review_"
+    private val KEY_STARS = "_stars"
+    private val KEY_COUNT = "_count"
+    private val Context.ds by preferencesDataStore("reviews")
+
+    fun ratingFlow(code: String): Flow<Float> = context.ds.data.map { p ->
+        p[floatPreferencesKey(KEY_PREFIX + code + KEY_STARS)] ?: 0f
+    }
+
+    fun countFlow(code: String): Flow<Int> = context.ds.data.map { p ->
+        p[intPreferencesKey(KEY_PREFIX + code + KEY_COUNT)] ?: 0
+    }
+
+    suspend fun addReview(code: String, stars: Float) {
+        context.ds.edit { p ->
+            val kS = floatPreferencesKey(KEY_PREFIX + code + KEY_STARS)
+            val kC = intPreferencesKey(KEY_PREFIX + code + KEY_COUNT)
+            val curS = p[kS] ?: 0f
+            val curC = p[kC] ?: 0
+
+            val newC = curC + 1
+            val newS = (curS * curC + stars) / newC
+            p[kS] = newS
+            p[kC] = newC
+        }
     }
 }

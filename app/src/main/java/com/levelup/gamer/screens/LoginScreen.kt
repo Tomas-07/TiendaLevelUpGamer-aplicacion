@@ -1,120 +1,66 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 package com.levelup.gamer.screens
 
 import android.util.Patterns
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
+import android.widget.Toast
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import com.levelup.gamer.ui.deps
 
 @Composable
-fun LoginScreen(onLogged: () -> Unit, onGoRegister: () -> Unit) {
-    val d = deps()
+fun LoginScreen(onLogin: () -> Unit = {}, onGoRegister: () -> Unit = {}) {
+    val context = LocalContext.current
+    var email by remember { mutableStateOf("") }
+    var pass by remember { mutableStateOf("") }
+    var emailTouched by remember { mutableStateOf(false) }
+    var passTouched by remember { mutableStateOf(false) }
+    var showPass by remember { mutableStateOf(false) }
 
-    var email by remember { mutableStateOf(TextFieldValue("")) }
-    var nombre by remember { mutableStateOf(TextFieldValue("")) }
-    var showEmailError by remember { mutableStateOf(false) }
-    var showNombreError by remember { mutableStateOf(false) }
+    val emailError = when {
+        !emailTouched -> null
+        email.isBlank() -> "Campo obligatorio"
+        !Patterns.EMAIL_ADDRESS.matcher(email).matches() -> "Email inválido"
+        else -> null
+    }
+    val passError = when {
+        !passTouched -> null
+        pass.isBlank() -> "Campo obligatorio"
+        pass.length < 6 -> "Mínimo 6 caracteres"
+        else -> null
+    }
+    val formValid = emailError == null && passError == null && email.isNotBlank() && pass.isNotBlank()
 
-    val correo = email.text.trim()
-    val nombreOk = nombre.text.trim()
-    val isEmailValid = correo.isNotEmpty() && Patterns.EMAIL_ADDRESS.matcher(correo).matches()
-    val isNombreValid = nombreOk.isNotEmpty()
-    val isFormValid = isEmailValid && isNombreValid
+    Scaffold(topBar = { TopAppBar(title = { Text("Iniciar sesión") }) }) { padding ->
+        Column(Modifier.padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            OutlinedTextField(
+                value = email, onValueChange = { email = it; emailTouched = true },
+                label = { Text("Email") }, isError = emailError != null,
+                supportingText = { if (emailError != null) Text(emailError) },
+                modifier = Modifier.fillMaxWidth()
+            )
+            OutlinedTextField(
+                value = pass, onValueChange = { pass = it; passTouched = true },
+                label = { Text("Contraseña") }, isError = passError != null,
+                supportingText = { if (passError != null) Text(passError) },
+                visualTransformation = if (showPass) VisualTransformation.None else PasswordVisualTransformation(),
+                trailingIcon = { TextButton(onClick = { showPass = !showPass }) { Text(if (showPass) "Ocultar" else "Ver") } },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Button(
+                onClick = {
+                    emailTouched = true; passTouched = true
+                    if (formValid) { Toast.makeText(context, "Sesión iniciada", Toast.LENGTH_SHORT).show(); onLogin() }
+                    else { Toast.makeText(context, "Revisa los campos", Toast.LENGTH_SHORT).show() }
+                },
+                enabled = formValid, modifier = Modifier.fillMaxWidth()
+            ) { Text("Ingresar") }
 
-    Column(
-        Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text("Level-Up Gamer", style = MaterialTheme.typography.headlineSmall)
-        Spacer(Modifier.height(16.dp))
-
-        OutlinedTextField(
-            value = email,
-            onValueChange = {
-                email = it
-                if (showEmailError) showEmailError = false
-            },
-            label = { Text("Email") },
-            modifier = Modifier.fillMaxWidth(),
-            isError = showEmailError || (correo.isNotEmpty() && !isEmailValid),
-            supportingText = {
-                when {
-                    showEmailError || (correo.isNotEmpty() && !isEmailValid) ->
-                        Text("Correo inválido (ej: nombre@dominio.com)")
-                }
-            },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
-        )
-
-        Spacer(Modifier.height(8.dp))
-
-        OutlinedTextField(
-            value = nombre,
-            onValueChange = {
-                nombre = it
-                if (showNombreError) showNombreError = false
-            },
-            label = { Text("Nombre") },
-            modifier = Modifier.fillMaxWidth(),
-            isError = showNombreError || (nombreOk.isEmpty() && nombre.text.isNotEmpty()),
-            supportingText = {
-                when {
-                    showNombreError || (nombreOk.isEmpty() && nombre.text.isNotEmpty()) ->
-                        Text("El nombre no puede estar vacío")
-                }
-            },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done)
-        )
-
-        Spacer(Modifier.height(16.dp))
-
-        Button(
-            onClick = {
-                if (!isEmailValid) showEmailError = true
-                if (!isNombreValid) showNombreError = true
-                if (!isFormValid) return@Button
-
-                d.usuarioVM.login(
-                    nombreOk,
-                    correo,
-                    99,
-                    null
-                )
-                onLogged()
-            },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = isFormValid
-        ) {
-            Text("Ingresar")
-        }
-
-        TextButton(onClick = onGoRegister) {
-            Text("Crear cuenta (18+)")
+            TextButton(onClick = onGoRegister, modifier = Modifier.fillMaxWidth()) { Text("¿No tienes cuenta? Crear una") }
         }
     }
 }

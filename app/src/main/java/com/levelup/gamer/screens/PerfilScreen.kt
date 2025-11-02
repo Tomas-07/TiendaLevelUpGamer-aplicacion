@@ -43,7 +43,7 @@ fun PerfilScreen(onLogout: () -> Unit = {}) {
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // ✅ Botón con recurso nativo (vibración + mensaje visible)
+
             Button(
                 onClick = {
                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -59,7 +59,7 @@ fun PerfilScreen(onLogout: () -> Unit = {}) {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // ✅ Botón de cerrar sesión (usa el callback del NavGraph)
+
             OutlinedButton(
                 onClick = {
                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -76,7 +76,7 @@ fun PerfilScreen(onLogout: () -> Unit = {}) {
     }
 }
 
-// ✅ Función auxiliar para abrir WhatsApp
+
 fun openWhatsApp(phone: String, message: String, context: android.content.Context) {
     try {
         val uri = Uri.parse("https://wa.me/$phone?text=${Uri.encode(message)}")
