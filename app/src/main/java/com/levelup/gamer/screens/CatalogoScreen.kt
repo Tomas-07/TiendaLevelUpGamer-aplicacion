@@ -6,6 +6,8 @@ import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,6 +20,7 @@ import com.levelup.gamer.viewmodel.ProductoVM
 import com.levelup.gamer.ui.deps
 import com.levelup.gamer.viewmodel.CarritoVM
 import com.levelup.gamer.model.Producto
+
 
 @Composable
 fun CatalogoScreen(onGoCart:()->Unit, onGoPerfil:()->Unit) {
@@ -59,6 +62,7 @@ private fun applyFilters(vm: ProductoVM, cat: String?, min: String, max: String,
 @Composable
 fun ProductoItem(p: Producto, onAdd: (Producto)->Unit) {
     val haptics = LocalHapticFeedback.current
+    val context = LocalContext.current
     Card(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
         Column(Modifier.padding(12.dp)) {
             Text(p.nombre, style = MaterialTheme.typography.titleMedium)
