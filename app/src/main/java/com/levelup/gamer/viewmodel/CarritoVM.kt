@@ -5,7 +5,7 @@ import com.levelup.gamer.model.Producto
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-// ✅ Estructura del item del carrito
+
 data class CartItem(val producto: Producto, val cantidad: Int)
 
 class CarritoVM : ViewModel() {

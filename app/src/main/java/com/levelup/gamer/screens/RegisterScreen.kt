@@ -19,7 +19,7 @@ fun RegisterScreen(
     onGoLogin: () -> Unit = {}
 ) {
     val d = deps()
-    val context = androidx.compose.ui.platform.LocalContext.current  // ✅ obtener contexto aquí
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     var nombre by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
