@@ -40,7 +40,7 @@ fun RegisterScreen(
         !touched -> null
         edad.isBlank() -> "Campo obligatorio"
         edad.toIntOrNull() == null -> "Debe ser un número"
-        (edad.toIntOrNull() ?: 0) < 10 -> "Debe tener al menos 10 años"
+        (edad.toIntOrNull() ?: 0) < 18 -> "Debe ser mayor de 18 años para crear una cuenta"
         else -> null
     }
     val passError = when {
