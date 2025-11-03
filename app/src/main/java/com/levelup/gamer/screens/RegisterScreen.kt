@@ -7,93 +7,126 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import com.levelup.gamer.model.Usuario
+import com.levelup.gamer.ui.deps
 
 @Composable
-fun RegisterScreen(onRegister: () -> Unit = {}, onGoLogin: () -> Unit = {}) {
-    val context = LocalContext.current
+fun RegisterScreen(
+    onRegister: () -> Unit = {},
+    onGoLogin: () -> Unit = {}
+) {
+    val d = deps()
+    val context = androidx.compose.ui.platform.LocalContext.current  // ✅ obtener contexto aquí
+
     var nombre by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
+    var edad by remember { mutableStateOf("") }
     var pass by remember { mutableStateOf("") }
-    var confirm by remember { mutableStateOf("") }
-    var nombreTouched by remember { mutableStateOf(false) }
-    var emailTouched by remember { mutableStateOf(false) }
-    var passTouched by remember { mutableStateOf(false) }
-    var confirmTouched by remember { mutableStateOf(false) }
+    var pass2 by remember { mutableStateOf("") }
+    var touched by remember { mutableStateOf(false) }
     var showPass by remember { mutableStateOf(false) }
-    var showConfirm by remember { mutableStateOf(false) }
 
-    val nombreError = when {
-        !nombreTouched -> null
-        nombre.isBlank() -> "Campo obligatorio"
-        nombre.length < 2 -> "Muy corto"
-        else -> null
-    }
+    val nombreError = if (touched && nombre.isBlank()) "Campo obligatorio" else null
     val emailError = when {
-        !emailTouched -> null
+        !touched -> null
         email.isBlank() -> "Campo obligatorio"
         !Patterns.EMAIL_ADDRESS.matcher(email).matches() -> "Email inválido"
         else -> null
     }
-    fun passOk(p: String) = p.length >= 6 && p.any { it.isDigit() }
+    val edadError = when {
+        !touched -> null
+        edad.isBlank() -> "Campo obligatorio"
+        edad.toIntOrNull() == null -> "Debe ser un número"
+        (edad.toIntOrNull() ?: 0) < 10 -> "Debe tener al menos 10 años"
+        else -> null
+    }
     val passError = when {
-        !passTouched -> null
+        !touched -> null
         pass.isBlank() -> "Campo obligatorio"
-        !passOk(pass) -> "Mínimo 6 y 1 número"
+        pass.length < 6 -> "Mínimo 6 caracteres"
+        !pass.any { it.isDigit() } -> "Debe incluir un número"
         else -> null
     }
-    val confirmError = when {
-        !confirmTouched -> null
-        confirm.isBlank() -> "Campo obligatorio"
-        confirm != pass -> "No coincide con la contraseña"
+    val pass2Error = when {
+        !touched -> null
+        pass2.isBlank() -> "Campo obligatorio"
+        pass2 != pass -> "Las contraseñas no coinciden"
         else -> null
     }
-    val formValid = listOf(nombreError, emailError, passError, confirmError).all { it == null } &&
-            nombre.isNotBlank() && email.isNotBlank() && pass.isNotBlank() && confirm.isNotBlank()
+
+    val formValid = listOf(nombreError, emailError, edadError, passError, pass2Error).all { it == null }
 
     Scaffold(topBar = { TopAppBar(title = { Text("Crear cuenta") }) }) { padding ->
-        Column(Modifier.padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(
+            Modifier.padding(padding).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             OutlinedTextField(
-                value = nombre, onValueChange = { nombre = it; nombreTouched = true },
-                label = { Text("Nombre") }, isError = nombreError != null,
-                supportingText = { if (nombreError != null) Text(nombreError) },
+                value = nombre, onValueChange = { nombre = it; touched = true },
+                label = { Text("Nombre completo") },
+                isError = nombreError != null,
+                supportingText = { if (nombreError != null) Text(nombreError, color = MaterialTheme.colorScheme.error) },
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
-                value = email, onValueChange = { email = it; emailTouched = true },
-                label = { Text("Email") }, isError = emailError != null,
-                supportingText = { if (emailError != null) Text(emailError) },
+                value = email, onValueChange = { email = it; touched = true },
+                label = { Text("Email") },
+                isError = emailError != null,
+                supportingText = { if (emailError != null) Text(emailError, color = MaterialTheme.colorScheme.error) },
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
-                value = pass, onValueChange = { pass = it; passTouched = true },
-                label = { Text("Contraseña") }, isError = passError != null,
-                supportingText = { if (passError != null) Text(passError) },
+                value = edad, onValueChange = { edad = it; touched = true },
+                label = { Text("Edad") },
+                isError = edadError != null,
+                supportingText = { if (edadError != null) Text(edadError, color = MaterialTheme.colorScheme.error) },
+                modifier = Modifier.fillMaxWidth()
+            )
+            OutlinedTextField(
+                value = pass, onValueChange = { pass = it; touched = true },
+                label = { Text("Contraseña") },
+                isError = passError != null,
+                supportingText = { if (passError != null) Text(passError, color = MaterialTheme.colorScheme.error) },
                 visualTransformation = if (showPass) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = { TextButton(onClick = { showPass = !showPass }) { Text(if (showPass) "Ocultar" else "Ver") } },
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
-                value = confirm, onValueChange = { confirm = it; confirmTouched = true },
-                label = { Text("Confirmar contraseña") }, isError = confirmError != null,
-                supportingText = { if (confirmError != null) Text(confirmError) },
-                visualTransformation = if (showConfirm) VisualTransformation.None else PasswordVisualTransformation(),
-                trailingIcon = { TextButton(onClick = { showConfirm = !showConfirm }) { Text(if (showConfirm) "Ocultar" else "Ver") } },
+                value = pass2, onValueChange = { pass2 = it; touched = true },
+                label = { Text("Repite la contraseña") },
+                isError = pass2Error != null,
+                supportingText = { if (pass2Error != null) Text(pass2Error, color = MaterialTheme.colorScheme.error) },
+                visualTransformation = if (showPass) VisualTransformation.None else PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth()
             )
+
             Button(
                 onClick = {
-                    nombreTouched = true; emailTouched = true; passTouched = true; confirmTouched = true
-                    if (formValid) { Toast.makeText(context, "Registro exitoso", Toast.LENGTH_SHORT).show(); onRegister() }
-                    else { Toast.makeText(context, "Revisa los campos", Toast.LENGTH_SHORT).show() }
+                    touched = true
+                    if (formValid) {
+                        val usuario = Usuario(
+                            nombre = nombre,
+                            email = email,
+                            edad = edad.toIntOrNull() ?: 0,
+                            esDuoc = false, puntos = 0, nivel = 1, referidoPor = null
+                        )
+                        d.usuarioVM.login(usuario)
+                        Toast.makeText(context, "Cuenta creada con éxito", Toast.LENGTH_SHORT).show()  // ✅ usar context
+                        onRegister()
+                    } else {
+                        Toast.makeText(context, "Completa correctamente los campos", Toast.LENGTH_SHORT).show()  // ✅ usar context
+                    }
                 },
-                enabled = formValid, modifier = Modifier.fillMaxWidth()
-            ) { Text("Crear cuenta") }
+                enabled = formValid,
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("Registrarse") }
 
-            TextButton(onClick = onGoLogin, modifier = Modifier.fillMaxWidth()) { Text("¿Ya tienes cuenta? Iniciar sesión") }
+            TextButton(onClick = onGoLogin, modifier = Modifier.fillMaxWidth()) {
+                Text("¿Ya tienes cuenta? Iniciar sesión")
+            }
         }
     }
 }

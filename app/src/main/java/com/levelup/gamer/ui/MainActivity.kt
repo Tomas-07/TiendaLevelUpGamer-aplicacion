@@ -7,6 +7,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.rememberNavController
@@ -18,19 +19,22 @@ import com.levelup.gamer.viewmodel.CarritoVM
 import com.levelup.gamer.viewmodel.ProductoVM
 import com.levelup.gamer.viewmodel.UsuarioVM
 
-class MainActivity: ComponentActivity() {
+class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             LevelUpTheme {
                 Surface {
                     val nav = rememberNavController()
-                    val repo = remember { ProductoRepository(this) }
-                    val session = remember { SessionRepository(this) }
+                    val ctx = LocalContext.current
+
+                    val repo = remember(ctx) { ProductoRepository(ctx) }
+                    val session = remember(ctx) { SessionRepository(ctx) }
+
                     val productoVM = remember { ProductoVM(repo) }
-                    productoVM.cargar()
                     val carritoVM = remember { CarritoVM() }
                     val usuarioVM = remember { UsuarioVM(session) }
+
                     ProvideDeps(Deps(productoVM, carritoVM, usuarioVM)) {
                         AppNav(nav)
                     }
@@ -41,17 +45,16 @@ class MainActivity: ComponentActivity() {
 }
 
 data class Deps(val productoVM: ProductoVM, val carritoVM: CarritoVM, val usuarioVM: UsuarioVM)
-private val LocalDeps = androidx.compose.runtime.staticCompositionLocalOf<Deps> { error("Deps") }
+private val LocalDeps = androidx.compose.runtime.staticCompositionLocalOf<Deps> { error("Deps not provided") }
 
 @Composable
 fun deps() = LocalDeps.current
 
 @Composable
 fun ProvideDeps(d: Deps, content: @Composable ()->Unit) {
-    androidx.compose.runtime.CompositionLocalProvider(LocalDeps provides d, content = content)
+    CompositionLocalProvider(LocalDeps provides d) { content() }
 }
 
-// Helper to open WhatsApp chat
 fun openWhatsApp(number: String, message: String, activity: ComponentActivity) {
     val uri = Uri.parse("https://wa.me/$number?text=" + Uri.encode(message))
     val i = Intent(Intent.ACTION_VIEW, uri)

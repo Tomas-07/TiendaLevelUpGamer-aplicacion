@@ -1,2 +1,11 @@
 package com.levelup.gamer.navigation
-enum class Route { Login, Register, Catalogo, Carrito, Perfil, Detalle, Reseñas }
+
+
+enum class Route {
+    Splash,
+    Login,
+    Register,
+    Catalogo,
+    Carrito,
+    Perfil
+}
