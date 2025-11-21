@@ -1,19 +1,21 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.levelup.gamer.screens
 
+import android.widget.Toast
 import android.util.Patterns
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.unit.dp
-import com.levelup.gamer.model.Usuario
 import com.levelup.gamer.ui.deps
-import com.levelup.gamer.viewmodel.UsuarioVM
 
 @Composable
 fun LoginScreen(
@@ -21,27 +23,33 @@ fun LoginScreen(
     onGoRegister: () -> Unit
 ) {
     val d = deps()
+    val context = LocalContext.current
 
     var email by remember { mutableStateOf(TextFieldValue("")) }
-    var nombre by remember { mutableStateOf(TextFieldValue("")) }
+    var password by remember { mutableStateOf(TextFieldValue("")) }
+    var showPass by remember { mutableStateOf(false) }
+
     var showEmailError by remember { mutableStateOf(false) }
-    var showNombreError by remember { mutableStateOf(false) }
+    var showPassError by remember { mutableStateOf(false) }
 
     val correo = email.text.trim()
-    val nombreOk = nombre.text.trim()
+    val pass = password.text.trim()
+
     val isEmailValid = correo.isNotEmpty() && Patterns.EMAIL_ADDRESS.matcher(correo).matches()
-    val isNombreValid = nombreOk.isNotEmpty()
-    val isFormValid = isEmailValid && isNombreValid
+    val isPassValid = pass.length >= 4
+
+    val isFormValid = isEmailValid && isPassValid
 
     Column(
-        Modifier
+        modifier = Modifier
             .fillMaxSize()
             .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+
         Text("Level-Up Gamer", style = MaterialTheme.typography.headlineSmall)
-        Spacer(Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(20.dp))
+
 
         OutlinedTextField(
             value = email,
@@ -60,45 +68,49 @@ fun LoginScreen(
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
         )
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         OutlinedTextField(
-            value = nombre,
+            value = password,
             onValueChange = {
-                nombre = it
-                if (showNombreError) showNombreError = false
+                password = it
+                if (showPassError) showPassError = false
             },
-            label = { Text("Nombre") },
+            label = { Text("Contraseña") },
             modifier = Modifier.fillMaxWidth(),
-            isError = showNombreError || (nombreOk.isEmpty() && nombre.text.isNotEmpty()),
+            isError = showPassError || (pass.isNotEmpty() && !isPassValid),
             supportingText = {
-                if (showNombreError || (nombreOk.isEmpty() && nombre.text.isNotEmpty())) {
-                    Text("El nombre no puede estar vacío")
+                if (showPassError || (pass.isNotEmpty() && !isPassValid)) {
+                    Text("La contraseña debe tener al menos 4 caracteres")
                 }
             },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done)
+            visualTransformation = if (showPass) VisualTransformation.None else PasswordVisualTransformation(),
+            trailingIcon = {
+                TextButton(onClick = { showPass = !showPass }) {
+                    Text(if (showPass) "Ocultar" else "Ver")
+                }
+            }
         )
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(20.dp))
+
 
         Button(
             onClick = {
                 if (!isEmailValid) showEmailError = true
-                if (!isNombreValid) showNombreError = true
+                if (!isPassValid) showPassError = true
                 if (!isFormValid) return@Button
 
-
-                val usuario = Usuario(
-                    nombre = nombreOk,
+                d.usuarioVM.login(
                     email = correo,
-                    edad = 99,
-                    esDuoc = false,
-                    puntos = 0,
-                    nivel = 1,
-                    referidoPor = null
-                )
-                d.usuarioVM.login(usuario)
-                onLogin()
+                    password = pass
+                ) { ok ->
+                    if (ok) {
+                        onLogin()
+                    } else {
+                        Toast.makeText(context, "Credenciales inválidas", Toast.LENGTH_SHORT).show()
+                    }
+                }
             },
             modifier = Modifier.fillMaxWidth(),
             enabled = isFormValid
@@ -106,10 +118,13 @@ fun LoginScreen(
             Text("Ingresar")
         }
 
-        TextButton(onClick = onGoRegister) {
+        Spacer(modifier = Modifier.height(12.dp))
+
+        TextButton(
+            onClick = onGoRegister,
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Text("Crear cuenta (18+)")
         }
     }
 }
-
-fun UsuarioVM.login(usuario: Usuario) {}

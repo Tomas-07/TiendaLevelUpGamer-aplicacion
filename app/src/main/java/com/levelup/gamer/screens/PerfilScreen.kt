@@ -2,7 +2,11 @@
 
 package com.levelup.gamer.screens
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.widget.Toast
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -11,13 +15,27 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import com.levelup.gamer.ui.deps
+import com.levelup.gamer.ui.openWhatsApp
+
+
+fun Context.getActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.getActivity()
+    else -> null
+}
 
 @Composable
-fun PerfilScreen(onLogout: () -> Unit = {}) {
+fun PerfilScreen(
+    onBack: () -> Unit = {},
+    onLogout: () -> Unit = {},
+) {
     val d = deps()
     val usuarioVM = d.usuarioVM
     val context = LocalContext.current
+    val activity = context.getActivity()
 
     val nombre by usuarioVM.nombre.collectAsState(initial = "")
     val email by usuarioVM.email.collectAsState(initial = "")
@@ -26,7 +44,16 @@ fun PerfilScreen(onLogout: () -> Unit = {}) {
     val foto by usuarioVM.photoUri.collectAsState(initial = null)
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Mi Perfil") }) }
+        topBar = {
+            TopAppBar(
+                title = { Text("Mi Perfil") },
+                navigationIcon = {
+                    IconButton(onClick = { onBack() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                    }
+                }
+            )
+        }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -36,30 +63,58 @@ fun PerfilScreen(onLogout: () -> Unit = {}) {
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // 📸 Foto persistente
+
             ProfilePhotoPicker(
                 initialPhotoUri = foto,
                 onPhotoChanged = { uri -> usuarioVM.setPhoto(uri) }
             )
 
-            Card(Modifier.fillMaxWidth(), elevation = CardDefaults.cardElevation(4.dp)) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Card(
+                Modifier.fillMaxWidth(),
+                elevation = CardDefaults.cardElevation(4.dp)
+            ) {
+                Column(
+                    Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     Text("Nombre", fontWeight = FontWeight.SemiBold)
-                    Text(if (nombre.isNotBlank()) nombre else "—")
+                    Text(nombre.ifBlank { "—" })
                     Divider()
+
                     Text("Email", fontWeight = FontWeight.SemiBold)
-                    Text(if (email.isNotBlank()) email else "—")
+                    Text(email.ifBlank { "—" })
                     Divider()
+
                     Text("Nivel", fontWeight = FontWeight.SemiBold)
                     Text("Nivel $nivel")
+
                     LinearProgressIndicator(
                         progress = calcProgresoNivel(puntos),
-                        modifier = Modifier.fillMaxWidth(),
-                        color = MaterialTheme.colorScheme.primary
+                        modifier = Modifier.fillMaxWidth()
                     )
-                    Text("Puntos: $puntos pts", style = MaterialTheme.typography.bodyMedium)
+
+                    Text("Puntos: $puntos pts")
                 }
             }
+
+
+            Button(
+                onClick = {
+                    if (activity != null) {
+                        openWhatsApp(
+                            number = "+56940525668",
+                            message = "Hola, necesito ayuda con mi cuenta LevelUp.",
+                            activity = activity as ComponentActivity
+                        )
+                    } else {
+                        Toast.makeText(context, "Error al abrir WhatsApp", Toast.LENGTH_SHORT).show()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Contactar Soporte (WhatsApp)")
+            }
+
 
             Button(
                 onClick = {
@@ -67,7 +122,8 @@ fun PerfilScreen(onLogout: () -> Unit = {}) {
                     Toast.makeText(context, "Sesión cerrada", Toast.LENGTH_SHORT).show()
                     onLogout()
                 },
-                colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.errorContainer)
+                colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.errorContainer),
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Cerrar sesión")
             }

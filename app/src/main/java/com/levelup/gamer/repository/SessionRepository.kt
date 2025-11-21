@@ -5,14 +5,17 @@ import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import com.levelup.gamer.model.Usuario
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 private val Context.dataStore by preferencesDataStore("levelup_prefs")
 
 class SessionRepository(private val context: Context) {
+
     companion object {
         val KEY_NAME = stringPreferencesKey("name")
         val KEY_EMAIL = stringPreferencesKey("email")
+        val KEY_PASSWORD = stringPreferencesKey("password")   // ← NUEVO
         val KEY_AGE = intPreferencesKey("age")
         val KEY_DUOC = booleanPreferencesKey("duoc")
         val KEY_PUNTOS = intPreferencesKey("puntos")
@@ -31,16 +34,31 @@ class SessionRepository(private val context: Context) {
     val referidoPor: Flow<String?> = context.dataStore.data.map { it[KEY_REFERIDO] }
     val photoUri: Flow<String?> = context.dataStore.data.map { it[KEY_PHOTO] }
 
-    suspend fun login(user: Usuario) {
+    // ---------------------------
+    // REGISTRO REAL
+    // ---------------------------
+    suspend fun register(usuario: Usuario, password: String) {
         context.dataStore.edit { p ->
-            p[KEY_NAME] = user.nombre
-            p[KEY_EMAIL] = user.email
-            p[KEY_AGE] = user.edad
-            p[KEY_DUOC] = user.esDuoc
-            p[KEY_PUNTOS] = user.puntos
-            p[KEY_NIVEL] = user.nivel
-            user.referidoPor?.let { p[KEY_REFERIDO] = it }
+            p[KEY_NAME] = usuario.nombre
+            p[KEY_EMAIL] = usuario.email
+            p[KEY_PASSWORD] = password
+            p[KEY_AGE] = usuario.edad
+            p[KEY_DUOC] = usuario.esDuoc
+            p[KEY_PUNTOS] = usuario.puntos
+            p[KEY_NIVEL] = usuario.nivel
+            usuario.referidoPor?.let { p[KEY_REFERIDO] = it }
         }
+    }
+
+    // ---------------------------
+    // LOGIN REAL
+    // ---------------------------
+    suspend fun login(email: String, password: String): Boolean {
+        val prefs = context.dataStore.data.first()
+        val savedEmail = prefs[KEY_EMAIL]
+        val savedPass = prefs[KEY_PASSWORD]
+
+        return email == savedEmail && password == savedPass
     }
 
     suspend fun logout() {

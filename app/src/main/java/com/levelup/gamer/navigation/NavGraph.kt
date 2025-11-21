@@ -39,13 +39,14 @@ fun AppNav(nav: NavHostController) {
 
         composable(Route.Perfil.name) {
             PerfilScreen(
+                onBack = { nav.navigate(Route.Catalogo.name) { launchSingleTop = true } },
                 onLogout = {
                     nav.navigate(Route.Login.name) {
                         popUpTo(Route.Catalogo.name) { inclusive = true }
-                        launchSingleTop = true
                     }
                 }
             )
         }
+
     }
 }

@@ -106,23 +106,29 @@ fun RegisterScreen(
             Button(
                 onClick = {
                     touched = true
-                    if (formValid) {
-                        val usuario = Usuario(
-                            nombre = nombre,
-                            email = email,
-                            edad = edad.toIntOrNull() ?: 0,
-                            esDuoc = false, puntos = 0, nivel = 1, referidoPor = null
-                        )
-                        d.usuarioVM.login(usuario)
-                        Toast.makeText(context, "Cuenta creada con éxito", Toast.LENGTH_SHORT).show()  // ✅ usar context
+                    if (!formValid) return@Button
+
+                    val usuario = Usuario(
+                        nombre = nombre,
+                        email = email,
+                        edad = edad.toInt(),
+                        esDuoc = false,
+                        puntos = 0,
+                        nivel = 1,
+                        referidoPor = null
+                    )
+
+                    d.usuarioVM.register(usuario, pass) {
+                        Toast.makeText(context, "Cuenta creada con éxito", Toast.LENGTH_SHORT).show()
                         onRegister()
-                    } else {
-                        Toast.makeText(context, "Completa correctamente los campos", Toast.LENGTH_SHORT).show()  // ✅ usar context
                     }
                 },
                 enabled = formValid,
                 modifier = Modifier.fillMaxWidth()
-            ) { Text("Registrarse") }
+            ) {
+                Text("Registrarse")
+            }
+
 
             TextButton(onClick = onGoLogin, modifier = Modifier.fillMaxWidth()) {
                 Text("¿Ya tienes cuenta? Iniciar sesión")
