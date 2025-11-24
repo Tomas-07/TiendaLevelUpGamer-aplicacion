@@ -1,6 +1,6 @@
 package com.levelup.gamer.model
 
-data class Usuario(
+data class UsuarioDto(
     val id: Long? = null,
     val nombre: String,
     val email: String,

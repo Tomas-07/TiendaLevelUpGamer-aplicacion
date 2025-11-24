@@ -1,4 +1,5 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+
 package com.levelup.gamer.screens
 
 import android.util.Patterns
@@ -7,11 +8,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.levelup.gamer.model.Usuario
 import com.levelup.gamer.ui.deps
+import kotlinx.coroutines.launch
 
 @Composable
 fun RegisterScreen(
@@ -19,7 +22,8 @@ fun RegisterScreen(
     onGoLogin: () -> Unit = {}
 ) {
     val d = deps()
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     var nombre by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -39,8 +43,8 @@ fun RegisterScreen(
     val edadError = when {
         !touched -> null
         edad.isBlank() -> "Campo obligatorio"
-        edad.toIntOrNull() == null -> "Debe ser un número"
-        (edad.toIntOrNull() ?: 0) < 18 -> "Debe ser mayor de 18 años para crear una cuenta"
+        edad.toIntOrNull() == null -> "Debe ser número"
+        (edad.toIntOrNull() ?: 0) < 18 -> "Debe ser mayor de 18 años"
         else -> null
     }
     val passError = when {
@@ -64,41 +68,48 @@ fun RegisterScreen(
             Modifier.padding(padding).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+
             OutlinedTextField(
                 value = nombre, onValueChange = { nombre = it; touched = true },
                 label = { Text("Nombre completo") },
                 isError = nombreError != null,
-                supportingText = { if (nombreError != null) Text(nombreError, color = MaterialTheme.colorScheme.error) },
+                supportingText = { nombreError?.let { Text(it, color = MaterialTheme.colorScheme.error) } },
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
                 value = email, onValueChange = { email = it; touched = true },
                 label = { Text("Email") },
                 isError = emailError != null,
-                supportingText = { if (emailError != null) Text(emailError, color = MaterialTheme.colorScheme.error) },
+                supportingText = { emailError?.let { Text(it, color = MaterialTheme.colorScheme.error) } },
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
                 value = edad, onValueChange = { edad = it; touched = true },
                 label = { Text("Edad") },
                 isError = edadError != null,
-                supportingText = { if (edadError != null) Text(edadError, color = MaterialTheme.colorScheme.error) },
+                supportingText = { edadError?.let { Text(it, color = MaterialTheme.colorScheme.error) } },
                 modifier = Modifier.fillMaxWidth()
             )
+
             OutlinedTextField(
                 value = pass, onValueChange = { pass = it; touched = true },
                 label = { Text("Contraseña") },
                 isError = passError != null,
-                supportingText = { if (passError != null) Text(passError, color = MaterialTheme.colorScheme.error) },
+                supportingText = { passError?.let { Text(it, color = MaterialTheme.colorScheme.error) } },
                 visualTransformation = if (showPass) VisualTransformation.None else PasswordVisualTransformation(),
-                trailingIcon = { TextButton(onClick = { showPass = !showPass }) { Text(if (showPass) "Ocultar" else "Ver") } },
+                trailingIcon = {
+                    TextButton(onClick = { showPass = !showPass }) {
+                        Text(if (showPass) "Ocultar" else "Ver")
+                    }
+                },
                 modifier = Modifier.fillMaxWidth()
             )
+
             OutlinedTextField(
                 value = pass2, onValueChange = { pass2 = it; touched = true },
                 label = { Text("Repite la contraseña") },
                 isError = pass2Error != null,
-                supportingText = { if (pass2Error != null) Text(pass2Error, color = MaterialTheme.colorScheme.error) },
+                supportingText = { pass2Error?.let { Text(it, color = MaterialTheme.colorScheme.error) } },
                 visualTransformation = if (showPass) VisualTransformation.None else PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth()
             )
@@ -107,25 +118,37 @@ fun RegisterScreen(
                 onClick = {
                     touched = true
                     if (formValid) {
-                        val usuario = Usuario(
-                            nombre = nombre,
-                            email = email,
-                            edad = edad.toIntOrNull() ?: 0,
-                            esDuoc = false, puntos = 0, nivel = 1, referidoPor = null
-                        )
-                        d.usuarioVM.login(usuario)
-                        Toast.makeText(context, "Cuenta creada con éxito", Toast.LENGTH_SHORT).show()  // ✅ usar context
-                        onRegister()
-                    } else {
-                        Toast.makeText(context, "Completa correctamente los campos", Toast.LENGTH_SHORT).show()  // ✅ usar context
+                        scope.launch {
+                            val usuario = Usuario(
+                                nombre = nombre,
+                                email = email,
+                                edad = edad.toInt(),
+                                referidoPor = null,
+                                puntos = 0,
+                                nivel = 1,
+                                password = pass,
+                                esDuoc = false
+                            )
+                            val ok = d.usuarioVM.register(usuario, pass)
+
+                            if (ok) {
+                                Toast.makeText(context, "Cuenta creada con éxito", Toast.LENGTH_SHORT).show()
+                                onRegister()
+                            } else {
+                                Toast.makeText(context, "Error al registrar usuario", Toast.LENGTH_SHORT).show()
+                            }
+                        }
                     }
                 },
                 enabled = formValid,
                 modifier = Modifier.fillMaxWidth()
             ) { Text("Registrarse") }
 
-            TextButton(onClick = onGoLogin, modifier = Modifier.fillMaxWidth()) {
-                Text("¿Ya tienes cuenta? Iniciar sesión")
+            TextButton(
+                onClick = onGoLogin,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("¿Ya tienes cuenta? Inicia sesión")
             }
         }
     }

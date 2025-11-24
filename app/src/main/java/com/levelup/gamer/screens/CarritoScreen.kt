@@ -83,10 +83,11 @@ fun CarritoScreen(onBack: () -> Unit) {
                         CartRow(
                             item = cartItem,
                             onAdd = { d.carritoVM.add(cartItem.producto) },
-                            onDec = { d.carritoVM.dec(cartItem.producto) },
-                            onRemove = { d.carritoVM.remove(cartItem.producto) }
+                            onDec = { /* disminuir si quieres */ },
+                            onRemove = { d.carritoVM.remove(cartItem) }
                         )
                     }
+
                 }
 
 
@@ -155,8 +156,9 @@ private fun CartRow(
     item: CartItem,
     onAdd: (Producto) -> Unit,
     onDec: (Producto) -> Unit,
-    onRemove: (Producto) -> Unit
-) {
+    onRemove: (CartItem) -> Unit
+)
+ {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
@@ -213,9 +215,10 @@ private fun CartRow(
                     contentPadding = PaddingValues(0.dp)
                 ) { Text("+") }
 
-                IconButton(onClick = { onRemove(item.producto) }) {
+                IconButton(onClick = { onRemove(item) }) {
                     Icon(Icons.Filled.Delete, contentDescription = "Quitar")
                 }
+
             }
         }
     }

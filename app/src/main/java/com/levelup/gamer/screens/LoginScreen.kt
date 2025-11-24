@@ -1,19 +1,21 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.levelup.gamer.screens
 
 import android.util.Patterns
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import com.levelup.gamer.model.Usuario
 import com.levelup.gamer.ui.deps
-import com.levelup.gamer.viewmodel.UsuarioVM
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
@@ -21,17 +23,16 @@ fun LoginScreen(
     onGoRegister: () -> Unit
 ) {
     val d = deps()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
-    var email by remember { mutableStateOf(TextFieldValue("")) }
-    var nombre by remember { mutableStateOf(TextFieldValue("")) }
-    var showEmailError by remember { mutableStateOf(false) }
-    var showNombreError by remember { mutableStateOf(false) }
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
 
-    val correo = email.text.trim()
-    val nombreOk = nombre.text.trim()
-    val isEmailValid = correo.isNotEmpty() && Patterns.EMAIL_ADDRESS.matcher(correo).matches()
-    val isNombreValid = nombreOk.isNotEmpty()
-    val isFormValid = isEmailValid && isNombreValid
+    val emailValid = email.isNotBlank() && Patterns.EMAIL_ADDRESS.matcher(email).matches()
+    val passwordValid = password.isNotBlank()
+
+    val formValid = emailValid && passwordValid
 
     Column(
         Modifier
@@ -45,37 +46,22 @@ fun LoginScreen(
 
         OutlinedTextField(
             value = email,
-            onValueChange = {
-                email = it
-                if (showEmailError) showEmailError = false
-            },
+            onValueChange = { email = it },
             label = { Text("Email") },
             modifier = Modifier.fillMaxWidth(),
-            isError = showEmailError || (correo.isNotEmpty() && !isEmailValid),
-            supportingText = {
-                if (showEmailError || (correo.isNotEmpty() && !isEmailValid)) {
-                    Text("Correo inválido (ej: nombre@dominio.com)")
-                }
-            },
+            isError = !emailValid && email.isNotBlank(),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
         )
 
         Spacer(Modifier.height(8.dp))
 
         OutlinedTextField(
-            value = nombre,
-            onValueChange = {
-                nombre = it
-                if (showNombreError) showNombreError = false
-            },
-            label = { Text("Nombre") },
+            value = password,
+            onValueChange = { password = it },
+            label = { Text("Contraseña") },
             modifier = Modifier.fillMaxWidth(),
-            isError = showNombreError || (nombreOk.isEmpty() && nombre.text.isNotEmpty()),
-            supportingText = {
-                if (showNombreError || (nombreOk.isEmpty() && nombre.text.isNotEmpty())) {
-                    Text("El nombre no puede estar vacío")
-                }
-            },
+            isError = password.isNotBlank() && !passwordValid,
+            visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done)
         )
 
@@ -83,33 +69,24 @@ fun LoginScreen(
 
         Button(
             onClick = {
-                if (!isEmailValid) showEmailError = true
-                if (!isNombreValid) showNombreError = true
-                if (!isFormValid) return@Button
-
-
-                val usuario = Usuario(
-                    nombre = nombreOk,
-                    email = correo,
-                    edad = 99,
-                    esDuoc = false,
-                    puntos = 0,
-                    nivel = 1,
-                    referidoPor = null
-                )
-                d.usuarioVM.login(usuario)
-                onLogin()
+                if (!formValid) return@Button
+                scope.launch {
+                    val ok = d.usuarioVM.login(email, password)
+                    if (ok) {
+                        onLogin()
+                    } else {
+                        Toast.makeText(context, "Correo o contraseña inválidos", Toast.LENGTH_SHORT).show()
+                    }
+                }
             },
             modifier = Modifier.fillMaxWidth(),
-            enabled = isFormValid
+            enabled = formValid
         ) {
             Text("Ingresar")
         }
 
         TextButton(onClick = onGoRegister) {
-            Text("Crear cuenta (18+)")
+            Text("Crear cuenta (solo mayores de 18 años)")
         }
     }
 }
-
-fun UsuarioVM.login(usuario: Usuario) {}
