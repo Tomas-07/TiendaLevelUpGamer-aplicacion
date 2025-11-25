@@ -115,6 +115,7 @@ fun RegisterScreen(
                         esDuoc = false,
                         puntos = 0,
                         nivel = 1,
+                        password = pass,
                         referidoPor = null
                     )
 

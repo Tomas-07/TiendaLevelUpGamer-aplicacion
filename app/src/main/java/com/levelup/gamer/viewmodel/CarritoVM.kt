@@ -9,6 +9,7 @@ import com.levelup.gamer.repository.SessionRepository
 import com.levelup.gamer.utils.codigoToId
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 data class CartItem(val producto: Producto, val cantidad: Int, val itemId: Long)
@@ -23,27 +24,22 @@ class CarritoVM(
     val items: StateFlow<List<CartItem>> = _items
 
     fun cargar() = viewModelScope.launch {
-        val userId = sessionRepo.currentUserId() ?: return@launch
+        val userId = sessionRepo.userId.first()
         val remote = carritoRepo.listar(userId)
 
-        // asegúrate de tener productos cargados antes
         val productos = productoRepo.all()
 
         _items.value = remote.mapNotNull { dto ->
             val prod = productos.find { codigoToId(it.codigo) == dto.productoId }
             prod?.let { CartItem(it, dto.cantidad, dto.id!!) }
         }
-
     }
 
     fun add(p: Producto) = viewModelScope.launch {
-        val userId = sessionRepo.currentUserId() ?: return@launch
-
+        val userId = sessionRepo.userId.first()
         carritoRepo.agregar(userId, p, 1)
-
         cargar()
     }
-
 
     fun remove(item: CartItem) = viewModelScope.launch {
         carritoRepo.eliminar(item.itemId)
@@ -51,7 +47,7 @@ class CarritoVM(
     }
 
     fun clear() = viewModelScope.launch {
-        val userId = sessionRepo.currentUserId() ?: return@launch
+        val userId = sessionRepo.userId.first()
         carritoRepo.vaciar(userId)
         cargar()
     }

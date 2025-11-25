@@ -3,36 +3,35 @@ package com.levelup.gamer.repository
 import com.levelup.gamer.api.ProductoApi
 import com.levelup.gamer.model.Producto
 import com.levelup.gamer.model.ProductoDto
+import com.levelup.gamer.remote.ProductoApiService
+import com.levelup.gamer.remote.RetrofitClient
 
-class ProductoRepository(private val api: ProductoApi) {
+class ProductoRepository(productoApi: ProductoApi) {
+    // Creamos una instancia del servicio de la API usando nuestro Retrofit
+    private val apiService = RetrofitClient.retrofit.create(ProductoApiService::class.java)
 
-    private var productos: List<Producto> = emptyList()
+    private var cachedProductos: List<Producto> = emptyList()
 
+    // El método load ahora hace la llamada a la API
     suspend fun load() {
-        val remote = api.getProductos()
-        productos = remote.map { it.toModel() }
+        try {
+            cachedProductos = apiService.getProductos()
+        } catch (e: Exception) {
+            // Propaga la excepción para que el ViewModel la capture
+            throw e
+        }
     }
 
-    fun all(): List<Producto> = productos
-
-    fun byCodigo(cod: String): Producto? =
-        productos.find { it.codigo == cod }
-
-    fun byCategoria(cat: String): List<Producto> =
-        productos.filter { it.categoria.equals(cat, true) }
-
-    fun search(query: String): List<Producto> =
-        productos.filter { it.nombre.contains(query, true) || it.categoria.contains(query, true) }
-
-    fun filter(cat: String?, min: Int?, max: Int?): List<Producto> =
-        productos.filter { p ->
-            (cat == null || p.categoria.equals(cat, true)) &&
-                    (min == null || p.precio >= min) &&
-                    (max == null || p.precio <= max)
-        }
+    // El método all devuelve los datos cacheados
+    fun all(): List<Producto> {
+        return cachedProductos
+    }
 }
 
+
+
 private fun ProductoDto.toModel() = Producto(
+    id = id ?: 0L,
     codigo = codigo,
     categoria = categoria,
     nombre = nombre,
@@ -42,4 +41,5 @@ private fun ProductoDto.toModel() = Producto(
     stock = stock,
     destacado = destacado
 )
+
 

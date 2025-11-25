@@ -20,7 +20,8 @@
         android:icon="@mipmap/ic_launcher"
         android:label="LevelUp Gamer"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Material3.Dark.NoActionBar">
+        android:theme="@style/Theme.Material3.Dark.NoActionBar"
+        android:usesCleartextTraffic="true">
 
         <!-- Actividad principal -->
         <activity
