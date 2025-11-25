@@ -1,43 +1,61 @@
 package com.levelup.gamer.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.levelup.gamer.model.Producto
+import com.levelup.gamer.repository.CarritoRepository
+import com.levelup.gamer.repository.ProductoRepository
+import com.levelup.gamer.repository.SessionRepository
+import com.levelup.gamer.utils.codigoToId
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 
-// ✅ Estructura del item del carrito
-data class CartItem(val producto: Producto, val cantidad: Int)
+data class CartItem(val producto: Producto, val cantidad: Int, val itemId: Long)
 
-class CarritoVM : ViewModel() {
+class CarritoVM(
+    private val carritoRepo: CarritoRepository,
+    private val productoRepo: ProductoRepository,
+    private val sessionRepo: SessionRepository
+) : ViewModel() {
 
     private val _items = MutableStateFlow<List<CartItem>>(emptyList())
     val items: StateFlow<List<CartItem>> = _items
 
-    fun add(p: Producto) {
-        val cur = _items.value.toMutableList()
-        val i = cur.indexOfFirst { it.producto.codigo == p.codigo }
-        if (i >= 0) cur[i] = cur[i].copy(cantidad = cur[i].cantidad + 1)
-        else cur.add(CartItem(p, 1))
-        _items.value = cur
-    }
+    fun cargar() = viewModelScope.launch {
+        val userId = sessionRepo.currentUserId() ?: return@launch
+        val remote = carritoRepo.listar(userId)
 
-    fun dec(p: Producto) {
-        val cur = _items.value.toMutableList()
-        val i = cur.indexOfFirst { it.producto.codigo == p.codigo }
-        if (i >= 0) {
-            val nueva = cur[i].cantidad - 1
-            if (nueva <= 0) cur.removeAt(i) else cur[i] = cur[i].copy(cantidad = nueva)
-            _items.value = cur
+        // asegúrate de tener productos cargados antes
+        val productos = productoRepo.all()
+
+        _items.value = remote.mapNotNull { dto ->
+            val prod = productos.find { codigoToId(it.codigo) == dto.productoId }
+            prod?.let { CartItem(it, dto.cantidad, dto.id!!) }
         }
+
     }
 
-    fun remove(p: Producto) {
-        _items.value = _items.value.filterNot { it.producto.codigo == p.codigo }
+    fun add(p: Producto) = viewModelScope.launch {
+        val userId = sessionRepo.currentUserId() ?: return@launch
+
+        carritoRepo.agregar(userId, p, 1)
+
+        cargar()
     }
 
-    fun clear() { _items.value = emptyList() }
+
+    fun remove(item: CartItem) = viewModelScope.launch {
+        carritoRepo.eliminar(item.itemId)
+        cargar()
+    }
+
+    fun clear() = viewModelScope.launch {
+        val userId = sessionRepo.currentUserId() ?: return@launch
+        carritoRepo.vaciar(userId)
+        cargar()
+    }
 
     fun count(): Int = _items.value.sumOf { it.cantidad }
-
     fun subtotal(): Int = _items.value.sumOf { it.producto.precio * it.cantidad }
 }
