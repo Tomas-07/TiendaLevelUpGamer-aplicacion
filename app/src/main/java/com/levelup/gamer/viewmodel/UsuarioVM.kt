@@ -2,6 +2,7 @@ package com.levelup.gamer.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.levelup.gamer.model.Usuario
 import com.levelup.gamer.repository.SessionRepository
 import com.levelup.gamer.model.Usuario
 import kotlinx.coroutines.flow.SharingStarted
@@ -20,6 +21,24 @@ class UsuarioVM(private val session: SessionRepository) : ViewModel() {
     val nivel    = session.nivel.stateIn(viewModelScope, SharingStarted.Eagerly, 1)
     val referido = session.referidoPor.stateIn(viewModelScope, SharingStarted.Eagerly, null)
     val photoUri = session.photo.stateIn(viewModelScope, SharingStarted.Eagerly, "")
+
+    // ---------------------------
+    // REGISTRO REAL
+    // ---------------------------
+    fun register(usuario: Usuario, password: String, onDone: () -> Unit) =
+        viewModelScope.launch {
+            session.register(usuario, password)
+            onDone()
+        }
+
+    // ---------------------------
+    // LOGIN REAL
+    // ---------------------------
+    fun login(email: String, password: String, onResult: (Boolean) -> Unit) =
+        viewModelScope.launch {
+            val ok = session.login(email, password)
+            onResult(ok)
+        }
 
     fun addPuntos(delta: Int) = viewModelScope.launch { session.addPuntos(delta) }
     fun setPhoto(uri: String) = viewModelScope.launch { session.setPhoto(uri) }

@@ -2,20 +2,20 @@
 
 package com.levelup.gamer.screens
 
-import android.util.Patterns
 import android.widget.Toast
+import android.util.Patterns
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.TextFieldValue
 import com.levelup.gamer.ui.deps
-import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
@@ -24,69 +24,107 @@ fun LoginScreen(
 ) {
     val d = deps()
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
 
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf(TextFieldValue("")) }
+    var password by remember { mutableStateOf(TextFieldValue("")) }
+    var showPass by remember { mutableStateOf(false) }
 
-    val emailValid = email.isNotBlank() && Patterns.EMAIL_ADDRESS.matcher(email).matches()
-    val passwordValid = password.isNotBlank()
+    var showEmailError by remember { mutableStateOf(false) }
+    var showPassError by remember { mutableStateOf(false) }
 
-    val formValid = emailValid && passwordValid
+    val correo = email.text.trim()
+    val pass = password.text.trim()
+
+    val isEmailValid = correo.isNotEmpty() && Patterns.EMAIL_ADDRESS.matcher(correo).matches()
+    val isPassValid = pass.length >= 4
+
+    val isFormValid = isEmailValid && isPassValid
 
     Column(
-        Modifier
+        modifier = Modifier
             .fillMaxSize()
             .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+
         Text("Level-Up Gamer", style = MaterialTheme.typography.headlineSmall)
-        Spacer(Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(20.dp))
+
 
         OutlinedTextField(
             value = email,
-            onValueChange = { email = it },
+            onValueChange = {
+                email = it
+                if (showEmailError) showEmailError = false
+            },
             label = { Text("Email") },
             modifier = Modifier.fillMaxWidth(),
-            isError = !emailValid && email.isNotBlank(),
+            isError = showEmailError || (correo.isNotEmpty() && !isEmailValid),
+            supportingText = {
+                if (showEmailError || (correo.isNotEmpty() && !isEmailValid)) {
+                    Text("Correo inválido (ej: nombre@dominio.com)")
+                }
+            },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
         )
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         OutlinedTextField(
             value = password,
-            onValueChange = { password = it },
+            onValueChange = {
+                password = it
+                if (showPassError) showPassError = false
+            },
             label = { Text("Contraseña") },
             modifier = Modifier.fillMaxWidth(),
-            isError = password.isNotBlank() && !passwordValid,
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done)
+            isError = showPassError || (pass.isNotEmpty() && !isPassValid),
+            supportingText = {
+                if (showPassError || (pass.isNotEmpty() && !isPassValid)) {
+                    Text("La contraseña debe tener al menos 4 caracteres")
+                }
+            },
+            visualTransformation = if (showPass) VisualTransformation.None else PasswordVisualTransformation(),
+            trailingIcon = {
+                TextButton(onClick = { showPass = !showPass }) {
+                    Text(if (showPass) "Ocultar" else "Ver")
+                }
+            }
         )
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(20.dp))
+
 
         Button(
             onClick = {
-                if (!formValid) return@Button
-                scope.launch {
-                    val ok = d.usuarioVM.login(email, password)
+                if (!isEmailValid) showEmailError = true
+                if (!isPassValid) showPassError = true
+                if (!isFormValid) return@Button
+
+                d.usuarioVM.login(
+                    email = correo,
+                    password = pass
+                ) { ok ->
                     if (ok) {
                         onLogin()
                     } else {
-                        Toast.makeText(context, "Correo o contraseña inválidos", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Credenciales inválidas", Toast.LENGTH_SHORT).show()
                     }
                 }
             },
             modifier = Modifier.fillMaxWidth(),
-            enabled = formValid
+            enabled = isFormValid
         ) {
             Text("Ingresar")
         }
 
-        TextButton(onClick = onGoRegister) {
-            Text("Crear cuenta (solo mayores de 18 años)")
+        Spacer(modifier = Modifier.height(12.dp))
+
+        TextButton(
+            onClick = onGoRegister,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Crear cuenta (18+)")
         }
     }
 }

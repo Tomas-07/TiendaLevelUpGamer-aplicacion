@@ -4,7 +4,7 @@
     "categoria": "juegos-mesa",
     "nombre": "Catan",
     "precio": 29990,
-    "imagen": "",
+    "imagen": "https://i5.walmartimages.com/asr/a1863816-7553-441d-ad37-734a716ed55a.00a63b9153c188bd583dbfd05b191f90.jpeg",
     "descripcion": "Estrategia en la isla de Catan.",
     "stock": 15,
     "destacado": true
@@ -14,7 +14,7 @@
     "categoria": "juegos-mesa",
     "nombre": "Carcassonne",
     "precio": 24990,
-    "imagen": "",
+    "imagen": "https://devirinvestments.s3.eu-west-1.amazonaws.com/img/wysiwyg/Articulos/carca_3.jpg",
     "descripcion": "Colocación de fichas estilo medieval.",
     "stock": 20
   },
@@ -23,7 +23,7 @@
     "categoria": "accesorios",
     "nombre": "Controlador Inalámbrico Xbox Series X",
     "precio": 59990,
-    "imagen": "",
+    "imagen": "hhttps://http2.mlstatic.com/D_NQ_NP_890301-MLU71411994362_092023-O.webp",
     "descripcion": "Botones mapeables y respuesta táctil.",
     "stock": 10
   },
@@ -32,7 +32,7 @@
     "categoria": "accesorios",
     "nombre": "Auriculares Gamer HyperX Cloud II",
     "precio": 79990,
-    "imagen": "",
+    "imagen": "https://progaming.cl/wp-content/uploads/2025/05/new-project-9-d671685a-6d1a-45cd-ba3e-889633145c4d.jpg",
     "descripcion": "Sonido envolvente y micrófono desmontable.",
     "stock": 8
   },
@@ -41,8 +41,8 @@
     "categoria": "consolas",
     "nombre": "PlayStation 5",
     "precio": 549990,
-    "imagen": "",
-    "descripcion": "Consola next‑gen de Sony.",
+    "imagen": "https://media.solotodo.com/media/products/1848498_picture_1701406726.jpg",
+    "descripcion": "Consola next-gen de Sony.",
     "stock": 5
   },
   {
@@ -50,7 +50,7 @@
     "categoria": "computadores",
     "nombre": "PC Gamer ASUS ROG Strix",
     "precio": 1299990,
-    "imagen": "",
+    "imagen": "https://media.solotodo.com/media/products/1376804_picture_1619193737.jpg",
     "descripcion": "Alto rendimiento para juegos exigentes.",
     "stock": 3
   },
@@ -59,7 +59,7 @@
     "categoria": "sillas",
     "nombre": "Silla Gamer Secretlab Titan",
     "precio": 349990,
-    "imagen": "",
+    "imagen": "https://www.ubuy.cl/productimg/?image=aHR0cHM6Ly9pbWFnZXMtbmEuc3NsLWltYWdlcy1hbWF6b24uY29tL2ltYWdlcy9JLzYxcTdkdEJsalFMLl9TUzQwMF8uanBn.jpg",
     "descripcion": "Ergonómica y ajustable.",
     "stock": 6
   },
@@ -68,7 +68,7 @@
     "categoria": "mouse",
     "nombre": "Mouse Gamer Logitech G502 HERO",
     "precio": 49990,
-    "imagen": "",
+    "imagen": "https://i.ytimg.com/vi/ujNM6uR6too/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLCozMny2B2eGTcs2fIl89RQC_rDIg",
     "descripcion": "Sensor de alta precisión.",
     "stock": 12
   },
@@ -77,16 +77,16 @@
     "categoria": "mousepad",
     "nombre": "Mousepad Razer Goliathus Extended Chroma",
     "precio": 29990,
-    "imagen": "",
+    "imagen": "https://prophonechile.cl/wp-content/uploads/2023/02/goliathusex.png",
     "descripcion": "Superficie amplia con RGB.",
     "stock": 9
   },
   {
     "codigo": "PP001",
     "categoria": "poleras",
-    "nombre": "Polera Gamer Personalizada 'Level‑Up'",
+    "nombre": "Polera Gamer Personalizada 'Level-Up'",
     "precio": 14990,
-    "imagen": "",
+    "imagen": "https://img.freepik.com/vector-premium/camiseta-negra-hombres-maqueta-realista-camiseta-manga-corta-plantilla-fondo_992252-602.jpg?semt=ais_hybrid&w=740&q=80",
     "descripcion": "Personalizable con gamer tag.",
     "stock": 25
   }
