@@ -21,7 +21,7 @@ object RetrofitClient {
 
     // 3. Crea la instancia de Retrofit
     val retrofit: Retrofit = Retrofit.Builder()
-        .baseUrl("http://10.0.2.2:9090/api/") // <-- ¡¡IMPORTANTE!! CAMBIA ESTA URL POR LA DE TU BACKEND
+        .baseUrl("http://10.0.2.2:9090/api/") // <-- ¡¡esto despues se cambia con el aws con el video del profe fernando
         .client(client)
         .addConverterFactory(GsonConverterFactory.create())
         .build()
