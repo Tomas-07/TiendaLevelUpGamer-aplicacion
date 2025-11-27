@@ -17,9 +17,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import coil.compose.AsyncImage
 import com.levelup.gamer.ui.deps
 import com.levelup.gamer.ui.openWhatsApp
-
 
 fun Context.getActivity(): Activity? = when (this) {
     is Activity -> this
@@ -37,11 +37,12 @@ fun PerfilScreen(
     val context = LocalContext.current
     val activity = context.getActivity()
 
-    val nombre by usuarioVM.nombre.collectAsState(initial = "")
-    val email by usuarioVM.email.collectAsState(initial = "")
-    val puntos by usuarioVM.puntos.collectAsState(initial = 0)
-    val nivel by usuarioVM.nivel.collectAsState(initial = 1)
-    val foto by usuarioVM.photoUri.collectAsState(initial = null)
+    val nombre by usuarioVM.nombre.collectAsState("")
+    val email by usuarioVM.email.collectAsState("")
+    val puntos by usuarioVM.puntos.collectAsState(0)
+    val nivel by usuarioVM.nivel.collectAsState(1)
+    val foto by usuarioVM.photoUri.collectAsState(null)
+    val edad by usuarioVM.edad.collectAsState(0)
 
     Scaffold(
         topBar = {
@@ -55,8 +56,9 @@ fun PerfilScreen(
             )
         }
     ) { padding ->
+
         Column(
-            modifier = Modifier
+            Modifier
                 .padding(padding)
                 .fillMaxSize()
                 .padding(20.dp),
@@ -64,39 +66,40 @@ fun PerfilScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            ProfilePhotoPicker(
-                initialPhotoUri = foto,
-                onPhotoChanged = { uri -> usuarioVM.setPhoto(uri) }
+            // FOTO (o default)
+            AsyncImage(
+                model = foto ?: "https://i.imgur.com/UMKxYkE.png",
+                contentDescription = "Foto de perfil",
+                modifier = Modifier
+                    .size(130.dp)
             )
 
             Card(
                 Modifier.fillMaxWidth(),
                 elevation = CardDefaults.cardElevation(4.dp)
             ) {
-                Column(
-                    Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text("Nombre", fontWeight = FontWeight.SemiBold)
-                    Text(nombre.ifBlank { "—" })
-                    Divider()
+                Column(Modifier.padding(16.dp)) {
 
-                    Text("Email", fontWeight = FontWeight.SemiBold)
-                    Text(email.ifBlank { "—" })
-                    Divider()
+                    Text("Nombre", fontWeight = FontWeight.Bold)
+                    Text(nombre)
+                    Spacer(Modifier.height(10.dp))
 
-                    Text("Nivel", fontWeight = FontWeight.SemiBold)
-                    Text("Nivel $nivel")
+                    Text("Email", fontWeight = FontWeight.Bold)
+                    Text(email)
+                    Spacer(Modifier.height(10.dp))
 
+                    Text("Edad", fontWeight = FontWeight.Bold)
+                    Text("$edad años")
+                    Spacer(Modifier.height(10.dp))
+
+                    Text("Nivel $nivel", fontWeight = FontWeight.Bold)
                     LinearProgressIndicator(
                         progress = calcProgresoNivel(puntos),
                         modifier = Modifier.fillMaxWidth()
                     )
-
-                    Text("Puntos: $puntos pts")
+                    Text("Puntos: $puntos")
                 }
             }
-
 
             Button(
                 onClick = {
@@ -114,7 +117,6 @@ fun PerfilScreen(
             ) {
                 Text("Contactar Soporte (WhatsApp)")
             }
-
 
             Button(
                 onClick = {

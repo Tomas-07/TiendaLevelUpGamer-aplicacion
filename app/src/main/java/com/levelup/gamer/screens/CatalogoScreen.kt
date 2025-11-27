@@ -30,6 +30,7 @@ fun CatalogoScreen(
     val d = deps()
     val productos by d.productoVM.items.collectAsState()
 
+    // cargar productos al entrar a la pantalla
     LaunchedEffect(Unit) { d.productoVM.cargar() }
 
     val snackbar = remember { SnackbarHostState() }
@@ -42,7 +43,6 @@ fun CatalogoScreen(
                     IconButton(onClick = onGoPerfil) {
                         Icon(Icons.Filled.Person, contentDescription = "Perfil")
                     }
-
                     IconButton(onClick = onGoCart) {
                         BadgedBox(badge = {
                             val c = d.carritoVM.count()
@@ -57,14 +57,18 @@ fun CatalogoScreen(
         snackbarHost = { SnackbarHost(hostState = snackbar) }
     ) { padding ->
 
-        Column(modifier = Modifier.padding(padding).padding(12.dp)) {
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .padding(12.dp)
+        ) {
 
             LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 items(productos) { p ->
                     ProductoItem(
                         p = p,
                         onAdd = { d.carritoVM.add(it) },
-                        onDetail = { onGoDetail(p.codigo) },
+                        onDetail = { onGoDetail(p.id.toString()) }, // ← CORREGIDO (USAR ID)
                         snackbar = snackbar
                     )
                 }

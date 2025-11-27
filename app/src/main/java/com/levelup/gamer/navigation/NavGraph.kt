@@ -5,7 +5,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.levelup.gamer.screens.*
-import com.levelup.gamer.ui.deps
 
 @Composable
 fun AppNav(nav: NavHostController) {
@@ -41,16 +40,17 @@ fun AppNav(nav: NavHostController) {
             CatalogoScreen(
                 onGoCart = { nav.navigate(Route.Carrito.name) },
                 onGoPerfil = { nav.navigate(Route.Perfil.name) },
-                onGoDetail = { codigo ->
-                    nav.navigate("detalle/$codigo")
+                onGoDetail = { id ->
+                    nav.navigate("detalle/$id")     // ← AHORA SE PASA EL ID
                 }
             )
         }
 
-        composable("detalle/{codigo}") { backStack ->
-            val codigo = backStack.arguments?.getString("codigo") ?: ""
+        // -------- DETALLE PRODUCTO CORREGIDO --------
+        composable("detalle/{id}") { backStack ->
+            val id = backStack.arguments?.getString("id") ?: ""
             DetalleProductoScreen(
-                codigo = codigo,
+                id = id,
                 onBack = { nav.popBackStack() }
             )
         }

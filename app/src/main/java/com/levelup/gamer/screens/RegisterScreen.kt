@@ -19,7 +19,7 @@ fun RegisterScreen(
     onGoLogin: () -> Unit = {}
 ) {
     val d = deps()
-    val context = androidx.compose.ui.platform.LocalContext.current  // ✅ obtener contexto aquí
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     var nombre by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -39,8 +39,8 @@ fun RegisterScreen(
     val edadError = when {
         !touched -> null
         edad.isBlank() -> "Campo obligatorio"
-        edad.toIntOrNull() == null -> "Debe ser un número"
-        (edad.toIntOrNull() ?: 0) < 10 -> "Debe tener al menos 10 años"
+        edad.toIntOrNull() == null -> "Solo se debe ingresar un número"
+        (edad.toIntOrNull() ?: 0) < 18 -> "Debe ser mayor de 18 años para poder crear una cuenta"
         else -> null
     }
     val passError = when {

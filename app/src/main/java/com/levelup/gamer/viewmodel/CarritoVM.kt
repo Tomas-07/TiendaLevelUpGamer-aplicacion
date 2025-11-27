@@ -6,13 +6,15 @@ import com.levelup.gamer.model.Producto
 import com.levelup.gamer.repository.CarritoRepository
 import com.levelup.gamer.repository.ProductoRepository
 import com.levelup.gamer.repository.SessionRepository
-import com.levelup.gamer.utils.codigoToId
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-data class CartItem(val producto: Producto, val cantidad: Int, val itemId: Long)
+data class CartItem(
+    val producto: Producto,
+    val cantidad: Int,
+    val itemId: Long
+)
 
 class CarritoVM(
     private val carritoRepo: CarritoRepository,
@@ -24,20 +26,41 @@ class CarritoVM(
     val items: StateFlow<List<CartItem>> = _items
 
     fun cargar() = viewModelScope.launch {
-        val userId = sessionRepo.userId.first()
-        val remote = carritoRepo.listar(userId)
+        val userId = sessionRepo.currentUserId() ?: return@launch
 
+        val remoto = carritoRepo.listar(userId)
         val productos = productoRepo.all()
 
-        _items.value = remote.mapNotNull { dto ->
-            val prod = productos.find { codigoToId(it.codigo) == dto.productoId }
-            prod?.let { CartItem(it, dto.cantidad, dto.id!!) }
+        _items.value = remoto.mapNotNull { dto ->
+            val prod = productos.find { it.id == dto.productoId }
+            prod?.let { CartItem(prod, dto.cantidad, dto.id!!) }
         }
     }
 
     fun add(p: Producto) = viewModelScope.launch {
-        val userId = sessionRepo.userId.first()
-        carritoRepo.agregar(userId, p, 1)
+        val userId = sessionRepo.currentUserId() ?: return@launch
+
+        val existing = _items.value.find { it.producto.id == p.id }
+
+        if (existing != null) {
+            carritoRepo.actualizarCantidad(existing.itemId, existing.cantidad + 1)
+        } else {
+            carritoRepo.agregar(userId, p, 1)
+        }
+
+        cargar()
+    }
+
+    fun dec(p: Producto) = viewModelScope.launch {
+        val existing = _items.value.find { it.producto.id == p.id } ?: return@launch
+
+        val newQty = existing.cantidad - 1
+
+        when {
+            newQty <= 0 -> carritoRepo.eliminar(existing.itemId)
+            else        -> carritoRepo.actualizarCantidad(existing.itemId, newQty)
+        }
+
         cargar()
     }
 
@@ -47,7 +70,7 @@ class CarritoVM(
     }
 
     fun clear() = viewModelScope.launch {
-        val userId = sessionRepo.userId.first()
+        val userId = sessionRepo.currentUserId() ?: return@launch
         carritoRepo.vaciar(userId)
         cargar()
     }

@@ -15,24 +15,45 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.levelup.gamer.ui.deps
+import kotlinx.coroutines.launch
 
 @Composable
 fun DetalleProductoScreen(
-    codigo: String,
+    id: String,          // ← RECIBE EL ID COMO STRING
     onBack: () -> Unit
 ) {
     val d = deps()
     val productos by d.productoVM.items.collectAsState()
 
-    val producto = productos.firstOrNull { it.codigo == codigo }
+    // Convertimos ID a Long
+    val productId = id.toLong()
+
+    // Buscamos por ID (NO por código)
+    val producto = productos.firstOrNull { it.id == productId }
 
     if (producto == null) {
-        Text("Producto no encontrado")
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Producto no encontrado") },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, null)
+                        }
+                    }
+                )
+            }
+        ) { padding ->
+            Box(modifier = Modifier.padding(padding).padding(20.dp)) {
+                Text("No se encontró el producto con ID $id")
+            }
+        }
         return
     }
 
-
     var stock by remember { mutableStateOf(producto.stock) }
+    val scope = rememberCoroutineScope()
+    val snackbar = remember { SnackbarHostState() }
 
     Scaffold(
         topBar = {
@@ -44,7 +65,8 @@ fun DetalleProductoScreen(
                     }
                 }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbar) }
     ) { padding ->
 
         Column(
@@ -53,7 +75,7 @@ fun DetalleProductoScreen(
                 .padding(16.dp)
         ) {
 
-
+            // IMAGEN
             AsyncImage(
                 model = producto.imagen,
                 contentDescription = producto.nombre,
@@ -66,7 +88,7 @@ fun DetalleProductoScreen(
 
             Spacer(Modifier.height(20.dp))
 
-
+            // TÍTULO
             Text(
                 producto.nombre,
                 style = MaterialTheme.typography.headlineMedium,
@@ -75,7 +97,7 @@ fun DetalleProductoScreen(
 
             Spacer(Modifier.height(10.dp))
 
-
+            // DESCRIPCIÓN
             Text(
                 producto.descripcion,
                 style = MaterialTheme.typography.bodyLarge,
@@ -84,7 +106,7 @@ fun DetalleProductoScreen(
 
             Spacer(Modifier.height(20.dp))
 
-
+            // PRECIO
             Text(
                 "Precio:",
                 style = MaterialTheme.typography.titleMedium,
@@ -99,7 +121,7 @@ fun DetalleProductoScreen(
 
             Spacer(Modifier.height(12.dp))
 
-
+            // STOCK
             Text(
                 text = "Stock disponible: $stock",
                 style = MaterialTheme.typography.titleMedium,
@@ -110,10 +132,15 @@ fun DetalleProductoScreen(
 
             Spacer(Modifier.height(25.dp))
 
-
+            // BOTÓN AGREGAR AL CARRITO
             Button(
                 onClick = {
                     d.carritoVM.add(producto)
+
+                    scope.launch {
+                        snackbar.showSnackbar("Agregado: ${producto.nombre}")
+                    }
+
                     stock = producto.stock
                 },
                 enabled = stock > 0,

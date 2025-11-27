@@ -5,9 +5,9 @@ data class UsuarioDto(
     val nombre: String,
     val email: String,
     val edad: Int,
-    val referidoPor: String? = null,
+    val password: String,
+    val esDuoc: Boolean = false,
     val puntos: Int = 0,
     val nivel: Int = 1,
-    val esDuoc: Boolean = false,
-    val password: String
+    val referidoPor: String? = null
 )
