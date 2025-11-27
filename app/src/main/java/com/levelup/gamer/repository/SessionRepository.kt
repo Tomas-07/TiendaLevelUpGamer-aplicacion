@@ -44,15 +44,12 @@ class SessionRepository(
     // -------------------------------
     suspend fun login(email: String, password: String): Boolean {
         return try {
-            val dto = UsuarioDto(
-                email = email,
-                password = password,
-                nombre = "",
-                edad = 0
-            )
+            val body = mapOf("email" to email, "password" to password)
+            val response = api.login(body)
 
-            val user = api.login(dto)
-            saveUserInPrefs(user)
+            if (!response.isSuccessful || response.body() == null) return false
+
+            saveUserInPrefs(response.body()!!)
             true
 
         } catch (e: Exception) {
@@ -77,18 +74,18 @@ class SessionRepository(
                 referidoPor = user.referidoPor
             )
 
-            api.register(dto)
-            true
+            val response = api.register(dto)
 
+            response.isSuccessful
         } catch (e: Exception) {
             false
         }
     }
 
     // -------------------------------
-    // GUARDAR USUARIO
+    // GUARDAR USUARIO DEL BACKEND
     // -------------------------------
-    private suspend fun saveUserInPrefs(user: UsuarioDto) {
+    private suspend fun saveUserInPrefs(user: Usuario) {
         context.dataStore.edit { p ->
             p[KEY_USER_ID] = user.id ?: 0L
             p[KEY_NAME] = user.nombre
@@ -97,28 +94,20 @@ class SessionRepository(
             p[KEY_DUOC] = user.esDuoc
             p[KEY_PUNTOS] = user.puntos
             p[KEY_NIVEL] = user.nivel
+
             user.referidoPor?.let { p[KEY_REFERIDO] = it }
         }
     }
 
-    // -------------------------------
-    // OBTENER USER ID PARA CARRITO
-    // -------------------------------
     suspend fun currentUserId(): Long? {
         val prefs = context.dataStore.data.first()
         return prefs[KEY_USER_ID]
     }
 
-    // -------------------------------
-    // LOGOUT
-    // -------------------------------
     suspend fun logout() {
         context.dataStore.edit { it.clear() }
     }
 
-    // -------------------------------
-    // SUMAR PUNTOS
-    // -------------------------------
     suspend fun addPuntos(delta: Int) {
         context.dataStore.edit { p ->
             val actual = p[KEY_PUNTOS] ?: 0
@@ -128,18 +117,12 @@ class SessionRepository(
         }
     }
 
-    // -------------------------------
-    // CAMBIAR FOTO
-    // -------------------------------
     suspend fun setPhoto(uri: String) {
         context.dataStore.edit { p ->
             p[KEY_PHOTO] = uri
         }
     }
 
-    // -------------------------------
-    // CÁLCULO DE NIVEL
-    // -------------------------------
     private fun calcNivel(p: Int): Int = when {
         p >= 1000 -> 5
         p >= 600 -> 4
