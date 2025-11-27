@@ -1,26 +1,44 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class)
 
 package com.levelup.gamer.screens
 
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import coil.compose.AsyncImage
+import com.levelup.gamer.R
 import com.levelup.gamer.ui.deps
 import com.levelup.gamer.ui.openWhatsApp
 
+// Obtener actividad real
 fun Context.getActivity(): Activity? = when (this) {
     is Activity -> this
     is ContextWrapper -> baseContext.getActivity()
@@ -30,102 +48,132 @@ fun Context.getActivity(): Activity? = when (this) {
 @Composable
 fun PerfilScreen(
     onBack: () -> Unit = {},
-    onLogout: () -> Unit = {},
+    onLogout: () -> Unit = {}
 ) {
     val d = deps()
     val usuarioVM = d.usuarioVM
-    val context = LocalContext.current
-    val activity = context.getActivity()
+    val ctx = LocalContext.current
 
+    // Datos usuario
     val nombre by usuarioVM.nombre.collectAsState("")
     val email by usuarioVM.email.collectAsState("")
     val puntos by usuarioVM.puntos.collectAsState(0)
     val nivel by usuarioVM.nivel.collectAsState(1)
-    val foto by usuarioVM.photoUri.collectAsState(null)
-    val edad by usuarioVM.edad.collectAsState(0)
+    val foto by usuarioVM.photoUri.collectAsState(initial = null)
+
+    // Animación del borde
+    val infinite = rememberInfiniteTransition()
+    val borderAnim by infinite.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(4000, easing = LinearEasing)
+        )
+    )
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Mi Perfil") },
                 navigationIcon = {
-                    IconButton(onClick = { onBack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, "Volver")
                     }
                 }
             )
         }
     ) { padding ->
-
         Column(
-            Modifier
+            modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
                 .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            // FOTO (o default)
-            AsyncImage(
-                model = foto ?: "https://i.imgur.com/UMKxYkE.png",
-                contentDescription = "Foto de perfil",
-                modifier = Modifier
-                    .size(130.dp)
-            )
+            // FOTO con animación gamer
+            Box(contentAlignment = Alignment.Center) {
 
+                val borderBrush = Brush.sweepGradient(
+                    listOf(
+                        Color(0xFF00E5FF),
+                        Color(0xFF00FF95),
+                        Color(0xFF00E5FF)
+                    )
+                )
+
+                Box(
+                    modifier = Modifier
+                        .size(150.dp)
+                        .border(
+                            BorderStroke(3.dp, borderBrush),
+                            shape = CircleShape
+                        )
+                        .padding(4.dp)
+                ) {
+                    ProfilePhotoPicker(
+                        initialPhotoUri = foto,
+                        onPhotoChanged = { usuarioVM.setPhoto(it) }
+                    )
+                }
+            }
+
+            // CARD DATOS USUARIO
             Card(
-                Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(4.dp)
+                modifier = Modifier.fillMaxWidth(),
+                elevation = CardDefaults.cardElevation(6.dp)
             ) {
-                Column(Modifier.padding(16.dp)) {
-
+                Column(
+                    Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     Text("Nombre", fontWeight = FontWeight.Bold)
                     Text(nombre)
-                    Spacer(Modifier.height(10.dp))
+
+                    Divider()
 
                     Text("Email", fontWeight = FontWeight.Bold)
                     Text(email)
-                    Spacer(Modifier.height(10.dp))
 
-                    Text("Edad", fontWeight = FontWeight.Bold)
-                    Text("$edad años")
-                    Spacer(Modifier.height(10.dp))
+                    Divider()
 
-                    Text("Nivel $nivel", fontWeight = FontWeight.Bold)
+                    Text("Nivel", fontWeight = FontWeight.Bold)
+                    Text("Nivel $nivel")
+
                     LinearProgressIndicator(
                         progress = calcProgresoNivel(puntos),
                         modifier = Modifier.fillMaxWidth()
                     )
-                    Text("Puntos: $puntos")
+
+                    Text("Puntos: $puntos pts")
                 }
             }
 
             Button(
                 onClick = {
-                    if (activity != null) {
+                    val act = ctx.getActivity()
+                    if (act != null) {
                         openWhatsApp(
-                            number = "+56940525668",
-                            message = "Hola, necesito ayuda con mi cuenta LevelUp.",
-                            activity = activity as ComponentActivity
+                            "+56940525668",
+                            "Hola, necesito ayuda con mi cuenta LevelUp.",
+                            act as ComponentActivity
                         )
-                    } else {
-                        Toast.makeText(context, "Error al abrir WhatsApp", Toast.LENGTH_SHORT).show()
-                    }
+                    } else Toast.makeText(ctx, "Error", Toast.LENGTH_SHORT).show()
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Contactar Soporte (WhatsApp)")
+                Text("Contactar soporte (WhatsApp)")
             }
 
             Button(
                 onClick = {
                     usuarioVM.logout()
-                    Toast.makeText(context, "Sesión cerrada", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(ctx, "Sesión cerrada", Toast.LENGTH_SHORT).show()
                     onLogout()
                 },
-                colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.errorContainer),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.error)
             ) {
                 Text("Cerrar sesión")
             }
@@ -133,10 +181,11 @@ fun PerfilScreen(
     }
 }
 
-private fun calcProgresoNivel(puntos: Int): Float = when {
-    puntos >= 1000 -> 1f
-    puntos >= 600 -> (puntos - 600) / 400f
-    puntos >= 300 -> (puntos - 300) / 300f
-    puntos >= 120 -> (puntos - 120) / 180f
-    else -> puntos / 120f
-}
+private fun calcProgresoNivel(p: Int): Float =
+    when {
+        p >= 1000 -> 1f
+        p >= 600 -> (p - 600) / 400f
+        p >= 300 -> (p - 300) / 300f
+        p >= 120 -> (p - 120) / 180f
+        else -> p / 120f
+    }

@@ -5,6 +5,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.levelup.gamer.screens.*
+import com.levelup.gamer.ui.deps
 
 @Composable
 fun AppNav(nav: NavHostController) {
@@ -14,10 +15,12 @@ fun AppNav(nav: NavHostController) {
         startDestination = Route.Splash.name
     ) {
 
+        // SPLASH
         composable(Route.Splash.name) {
             SplashRoute(nav)
         }
 
+        // LOGIN
         composable(Route.Login.name) {
             LoginScreen(
                 onLogin = {
@@ -29,6 +32,7 @@ fun AppNav(nav: NavHostController) {
             )
         }
 
+        // REGISTER
         composable(Route.Register.name) {
             RegisterScreen(
                 onRegister = { nav.popBackStack() },
@@ -36,29 +40,33 @@ fun AppNav(nav: NavHostController) {
             )
         }
 
+        // CATÁLOGO
         composable(Route.Catalogo.name) {
             CatalogoScreen(
                 onGoCart = { nav.navigate(Route.Carrito.name) },
                 onGoPerfil = { nav.navigate(Route.Perfil.name) },
-                onGoDetail = { id ->
-                    nav.navigate("detalle/$id")     // ← AHORA SE PASA EL ID
+                onGoDetail = { codigo ->
+                    nav.navigate("${Route.Detalle.name}/$codigo")
                 }
             )
         }
 
-        // -------- DETALLE PRODUCTO CORREGIDO --------
-        composable("detalle/{id}") { backStack ->
-            val id = backStack.arguments?.getString("id") ?: ""
+        // 🔥 DETALLE DEL PRODUCTO (CORREGIDO)
+        composable("${Route.Detalle.name}/{codigo}") { backStack ->
+            val codigo = backStack.arguments?.getString("codigo") ?: ""
+
             DetalleProductoScreen(
-                id = id,
+                codigo = codigo,
                 onBack = { nav.popBackStack() }
             )
         }
 
+        // CARRITO
         composable(Route.Carrito.name) {
             CarritoScreen(onBack = { nav.popBackStack() })
         }
 
+        // PERFIL
         composable(Route.Perfil.name) {
             PerfilScreen(
                 onLogout = {

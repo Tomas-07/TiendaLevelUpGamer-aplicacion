@@ -4,16 +4,25 @@ import com.levelup.gamer.api.ProductoApi
 import com.levelup.gamer.model.Producto
 import com.levelup.gamer.model.ProductoDto
 
-class ProductoRepository(private val api: ProductoApi) {
-
+class ProductoRepository(
+    private val api: ProductoApi
+) {
     private var productos: List<Producto> = emptyList()
 
     suspend fun load() {
-        val remote = api.getProductos()
-        productos = remote.map { it.toModel() }
+        try {
+            val remote = api.getProductos()
+            productos = remote.map { it.toModel() }
+        } catch (e: Exception) {
+            productos = emptyList()
+            throw e
+        }
     }
 
     fun all(): List<Producto> = productos
+
+    fun byCodigo(codigo: String): Producto? =
+        productos.firstOrNull { it.codigo == codigo }
 }
 
 private fun ProductoDto.toModel() = Producto(
