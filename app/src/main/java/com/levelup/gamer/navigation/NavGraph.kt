@@ -15,12 +15,10 @@ fun AppNav(nav: NavHostController) {
         startDestination = Route.Splash.name
     ) {
 
-        // SPLASH
         composable(Route.Splash.name) {
             SplashRoute(nav)
         }
 
-        // LOGIN
         composable(Route.Login.name) {
             LoginScreen(
                 onLogin = {
@@ -32,7 +30,6 @@ fun AppNav(nav: NavHostController) {
             )
         }
 
-        // REGISTER
         composable(Route.Register.name) {
             RegisterScreen(
                 onRegister = { nav.popBackStack() },
@@ -40,33 +37,30 @@ fun AppNav(nav: NavHostController) {
             )
         }
 
-        // CATÁLOGO
         composable(Route.Catalogo.name) {
             CatalogoScreen(
                 onGoCart = { nav.navigate(Route.Carrito.name) },
                 onGoPerfil = { nav.navigate(Route.Perfil.name) },
-                onGoDetail = { codigo ->
-                    nav.navigate("${Route.Detalle.name}/$codigo")
+                onGoDetail = { id ->
+                    nav.navigate("detalle/$id")
                 }
             )
         }
 
-        // 🔥 DETALLE DEL PRODUCTO (CORREGIDO)
-        composable("${Route.Detalle.name}/{codigo}") { backStack ->
-            val codigo = backStack.arguments?.getString("codigo") ?: ""
+        // DETALLE CON ID
+        composable("detalle/{id}") { backStack ->
+            val id = backStack.arguments?.getString("id")?.toLongOrNull() ?: 0L
 
             DetalleProductoScreen(
-                codigo = codigo,
+                id = id,
                 onBack = { nav.popBackStack() }
             )
         }
 
-        // CARRITO
         composable(Route.Carrito.name) {
             CarritoScreen(onBack = { nav.popBackStack() })
         }
 
-        // PERFIL
         composable(Route.Perfil.name) {
             PerfilScreen(
                 onLogout = {
