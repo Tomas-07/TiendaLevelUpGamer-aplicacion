@@ -1,5 +1,3 @@
-// C:/Users/casta/StudioProjects/TiendaLevelUpGamer-aplicacion/app/src/main/java/com/levelup/gamer/viewmodel/ProductoVM.kt
-
 package com.levelup.gamer.viewmodel
 
 import androidx.lifecycle.ViewModel
@@ -10,24 +8,16 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
+class ProductoVM(
+    private val repo: ProductoRepository
+) : ViewModel() {
 
-class ProductoVM(private val repo: ProductoRepository) : ViewModel() {
-    private val _items = MutableStateFlow<List<Producto>>(emptyList())
-    val items: StateFlow<List<Producto>> = _items
+    private val _productos = MutableStateFlow<List<Producto>>(emptyList())
+    val productos: StateFlow<List<Producto>> = _productos
 
     fun cargar() = viewModelScope.launch {
-        try {
-            repo.load()
-            val lista = repo.all()
-
-
-            println(">>> PRODUCTOS RECIBIDOS DESDE API: ${lista.size}")
-            lista.forEach { println(it) }
-
-            _items.value = lista
-        } catch (e: Exception) {
-            e.printStackTrace()
-            _items.value = emptyList()
-        }
+        _productos.value = repo.all()
     }
+
+    fun refrescar() = cargar()
 }

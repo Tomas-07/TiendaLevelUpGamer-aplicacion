@@ -9,19 +9,20 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
-import com.levelup.gamer.model.Usuario
-import com.levelup.gamer.viewmodel.RegisterResult
 import com.levelup.gamer.viewmodel.UsuarioVM
+import com.levelup.gamer.viewmodel.RegisterResult
+import com.levelup.gamer.model.Usuario
 
 @Composable
 fun RegisterScreen(
-    navController: NavController,
-    vm: UsuarioVM = viewModel()
+    onGoLogin: () -> Unit,
+    onRegister: () -> Unit // Callback para cuando el registro es exitoso
 ) {
+    // Inicializamos el ViewModel
+    val vm: UsuarioVM = viewModel()
     val context = LocalContext.current
 
-    // Campos
+    // Estados locales
     var nombre by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var edad by remember { mutableStateOf("") }
@@ -34,15 +35,11 @@ fun RegisterScreen(
             .padding(20.dp),
         verticalArrangement = Arrangement.Center
     ) {
-
-        Text(
-            text = "Crear cuenta",
-            style = MaterialTheme.typography.headlineMedium
-        )
+        Text(text = "Crear cuenta", style = MaterialTheme.typography.headlineMedium)
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Nombre
+        // Campo para el nombre
         OutlinedTextField(
             value = nombre,
             onValueChange = { nombre = it },
@@ -52,7 +49,7 @@ fun RegisterScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        // Email
+        // Campo para el correo electrónico
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
@@ -62,7 +59,7 @@ fun RegisterScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        // Edad
+        // Campo para la edad
         OutlinedTextField(
             value = edad,
             onValueChange = { edad = it },
@@ -72,7 +69,7 @@ fun RegisterScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        // Password
+        // Campo para la contraseña
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
@@ -83,7 +80,7 @@ fun RegisterScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        // Confirmar password
+        // Campo para confirmar la contraseña
         OutlinedTextField(
             value = confirm,
             onValueChange = { confirm = it },
@@ -94,17 +91,18 @@ fun RegisterScreen(
 
         Spacer(Modifier.height(24.dp))
 
-        // Botón registrar
+        // Botón para registrar
         Button(
             onClick = {
                 val user = Usuario(
-                    id = null,
+                    id = null, // Asumiendo que el ID se genera en Backend o DB
                     nombre = nombre,
                     email = email,
                     edad = edad.toIntOrNull() ?: -1,
                     password = password
                 )
 
+                // Llamamos a registerUser del ViewModel
                 vm.registerUser(
                     usuario = user,
                     password = password,
@@ -113,7 +111,7 @@ fun RegisterScreen(
                     when (result) {
                         is RegisterResult.Success -> {
                             Toast.makeText(context, result.message, Toast.LENGTH_SHORT).show()
-                            navController.navigate("login")
+                            onRegister() // Ejecutamos el callback para volver/navegar
                         }
                         is RegisterResult.Error -> {
                             Toast.makeText(context, result.message, Toast.LENGTH_SHORT).show()
@@ -128,8 +126,9 @@ fun RegisterScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        TextButton(onClick = { navController.navigate("login") }) {
-            Text("¿Ya tienes cuenta? Inicia sesión")
+        // Botón para ir a la pantalla de Login
+        TextButton(onClick = { onGoLogin() }) {
+            Text("¿Ya tienes cuenta? Inicia sesión aquí")
         }
     }
 }
