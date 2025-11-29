@@ -12,7 +12,6 @@ import kotlinx.coroutines.launch
 
 class ProductoVM(private val productoRepository: ProductoRepository) : ViewModel() {
 
-    // Estado que contiene la lista de productos
     private val _productos = MutableStateFlow<List<Producto>>(emptyList())
     val productos: StateFlow<List<Producto>> get() = _productos
 
@@ -23,13 +22,14 @@ class ProductoVM(private val productoRepository: ProductoRepository) : ViewModel
     private fun loadProductos() {
         viewModelScope.launch {
             try {
-                // Ahora que la URL es correcta, esto debería traer datos
                 val productosList = productoRepository.all()
-                _productos.value = productosList
+
+                // CORRECCIÓN: Filtramos por ID para asegurar que no haya repetidos
+                val listaUnica = productosList.distinctBy { it.id }
+
+                _productos.value = listaUnica
             } catch (e: Exception) {
                 e.printStackTrace()
-                // Si falla, la lista se queda vacía y la UI mostrará "Cargando..."
-                // Idealmente podrías manejar un estado de error aquí más adelante.
             }
         }
     }
@@ -43,7 +43,6 @@ class ProductoVM(private val productoRepository: ProductoRepository) : ViewModel
         }
     }
 
-    // Factory para crear ProductoVM manualmente con el repositorio
     class Factory(private val productoRepository: ProductoRepository) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {

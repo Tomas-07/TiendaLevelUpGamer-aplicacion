@@ -1,5 +1,6 @@
 package com.levelup.gamer.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -27,34 +28,56 @@ class CarritoVM(
     private val _items = MutableStateFlow<List<CartItem>>(emptyList())
     val items: StateFlow<List<CartItem>> = _items
 
-    fun cargar() = viewModelScope.launch {
-        val userId = sessionRepo.currentUserId() ?: return@launch
+    init {
+        cargar()
+    }
 
+    fun cargar() = viewModelScope.launch {
         try {
+            val userId = sessionRepo.currentUserId()
+            if (userId == null) {
+                Log.e("CarritoVM", "Usuario no logueado")
+                return@launch
+            }
+
+            // 1. Cargar items del carrito (remoto)
             val remoto = carritoRepo.listar(userId)
+
+            // 2. Cargar catálogo completo de productos
             val productos = productoRepo.all()
 
-            _items.value = remoto.mapNotNull { dto ->
+            // 3. Cruzar información (Match)
+            val listaCombinada = remoto.mapNotNull { dto ->
+                // Buscamos el producto que coincida con el ID del item del carrito
+                // Usamos toLong() para asegurar que la comparación sea correcta
                 val prod = productos.find { it.id == dto.productoId }
-                prod?.let { CartItem(prod, dto.cantidad, dto.id!!) }
+
+                if (prod != null) {
+                    CartItem(prod, dto.cantidad, dto.id!!)
+                } else {
+                    null // Si no encuentra el producto, lo ignora
+                }
             }
+
+            _items.value = listaCombinada
+            Log.d("CarritoVM", "Carrito cargado: ${listaCombinada.size} elementos")
+
         } catch (e: Exception) {
             e.printStackTrace()
+            Log.e("CarritoVM", "Error cargando carrito: ${e.message}")
         }
     }
 
     fun add(p: Producto) = viewModelScope.launch {
         val userId = sessionRepo.currentUserId() ?: return@launch
-
         try {
             val existing = _items.value.find { it.producto.id == p.id }
-
             if (existing != null) {
                 carritoRepo.actualizarCantidad(existing.itemId, existing.cantidad + 1)
             } else {
                 carritoRepo.agregar(userId, p, 1)
             }
-            cargar()
+            cargar() // Recargar lista
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -62,12 +85,12 @@ class CarritoVM(
 
     fun dec(p: Producto) = viewModelScope.launch {
         val existing = _items.value.find { it.producto.id == p.id } ?: return@launch
-
         try {
             val newQty = existing.cantidad - 1
-            when {
-                newQty <= 0 -> carritoRepo.eliminar(existing.itemId)
-                else        -> carritoRepo.actualizarCantidad(existing.itemId, newQty)
+            if (newQty <= 0) {
+                carritoRepo.eliminar(existing.itemId)
+            } else {
+                carritoRepo.actualizarCantidad(existing.itemId, newQty)
             }
             cargar()
         } catch (e: Exception) {
@@ -94,10 +117,7 @@ class CarritoVM(
         }
     }
 
-    fun count(): Int = _items.value.sumOf { it.cantidad }
-    fun subtotal(): Int = _items.value.sumOf { it.producto.precio * it.cantidad }
-
-    // FACTORY PARA INYECCIÓN DE DEPENDENCIAS
+    // Factory
     class Factory(
         private val carritoRepo: CarritoRepository,
         private val productoRepo: ProductoRepository,

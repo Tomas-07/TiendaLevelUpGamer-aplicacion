@@ -36,10 +36,10 @@ import com.levelup.gamer.viewmodel.CarritoVM
 import com.levelup.gamer.viewmodel.ProductoVM
 import kotlinx.coroutines.launch
 
-// Colores personalizados estilo Gamer
-val GamerGreen = Color(0xFF00FF00)
-val DarkBackground = Color(0xFF121212)
-val CardBackground = Color(0xFF1E1E1E)
+// Colores privados para evitar conflicto
+private val CatalogoGreen = Color(0xFF00FF00)
+private val CatalogoDark = Color(0xFF121212)
+private val CatalogoCard = Color(0xFF1E1E1E)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,9 +49,7 @@ fun CatalogoScreen(
     onGoDetail: (Long) -> Unit
 ) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
 
-    // 1. Configuración de dependencias (Retrofit + Repositorios)
     val retrofit = RetrofitClient.retrofit
     val productoApi = retrofit.create(ProductoApi::class.java)
     val carritoApi = retrofit.create(CarritoApi::class.java)
@@ -61,45 +59,48 @@ fun CatalogoScreen(
     val carritoRepo = remember { CarritoRepository(carritoApi) }
     val sessionRepo = remember { SessionRepository(context, usuarioApi) }
 
-    // 2. ViewModels
-    val productoVM: ProductoVM = viewModel(
-        factory = ProductoVM.Factory(productoRepo)
-    )
-    val carritoVM: CarritoVM = viewModel(
-        factory = CarritoVM.Factory(carritoRepo, productoRepo, sessionRepo)
-    )
+    val productoVM: ProductoVM = viewModel(factory = ProductoVM.Factory(productoRepo))
+    val carritoVM: CarritoVM = viewModel(factory = CarritoVM.Factory(carritoRepo, productoRepo, sessionRepo))
 
-    // 3. Estado
     val productos by productoVM.productos.collectAsState()
-    val cartItems by carritoVM.items.collectAsState() // Para saber cuántos items hay (opcional)
+    val cartItems by carritoVM.items.collectAsState()
+    val itemCount = cartItems.sumOf { it.cantidad }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Catálogo Gamer", color = Color.White, fontWeight = FontWeight.Bold) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = GamerGreen),
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = CatalogoGreen),
                 actions = {
                     IconButton(onClick = onGoPerfil) {
                         Icon(Icons.Default.Person, contentDescription = "Perfil", tint = Color.Black)
                     }
                     IconButton(onClick = onGoCart) {
-                        // Badge opcional: Podrías mostrar un numerito aquí si quisieras
-                        Icon(Icons.Default.ShoppingCart, contentDescription = "Carrito", tint = Color.Black)
+                        BadgedBox(
+                            badge = { if (itemCount > 0) Badge { Text("$itemCount") } }
+                        ) {
+                            Icon(Icons.Default.ShoppingCart, contentDescription = "Carrito", tint = Color.Black)
+                        }
                     }
                 }
             )
         },
         floatingActionButton = {
-            // BOTÓN FLOTANTE "VER CARRITO"
             ExtendedFloatingActionButton(
                 onClick = onGoCart,
-                containerColor = GamerGreen,
+                containerColor = CatalogoGreen,
                 contentColor = Color.Black,
-                icon = { Icon(Icons.Default.ShoppingCart, "Ver Carrito") },
+                icon = {
+                    BadgedBox(
+                        badge = { if (itemCount > 0) Badge { Text("$itemCount") } }
+                    ) {
+                        Icon(Icons.Default.ShoppingCart, "Ver Carrito")
+                    }
+                },
                 text = { Text("Ver Carrito", fontWeight = FontWeight.Bold) }
             )
         },
-        containerColor = DarkBackground
+        containerColor = CatalogoDark
     ) { paddingValues ->
 
         Column(
@@ -110,15 +111,19 @@ fun CatalogoScreen(
         ) {
             if (productos.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = GamerGreen)
+                    CircularProgressIndicator(color = CatalogoGreen)
                 }
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
-                    contentPadding = PaddingValues(bottom = 80.dp) // Espacio para que el FAB no tape el último item
+                    contentPadding = PaddingValues(bottom = 80.dp)
                 ) {
-                    items(productos) { producto ->
+                    // CORRECCIÓN IMPORTANTE: Agregamos 'key' para que la lista sea estable y no repita items
+                    items(
+                        items = productos,
+                        key = { it.id }
+                    ) { producto ->
                         ProductoCardGamer(
                             producto = producto,
                             onDetailClick = { onGoDetail(producto.id) },
@@ -145,14 +150,11 @@ fun ProductoCardGamer(
             .fillMaxWidth()
             .clickable(onClick = onDetailClick),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = CardBackground),
-        border = BorderStroke(2.dp, GamerGreen), // Borde verde neón
+        colors = CardDefaults.cardColors(containerColor = CatalogoCard),
+        border = BorderStroke(2.dp, CatalogoGreen),
         elevation = CardDefaults.cardElevation(8.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            // Imagen (Placeholder o Real)
+        Column(modifier = Modifier.padding(16.dp)) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -160,21 +162,16 @@ fun ProductoCardGamer(
                     .background(Color.Black.copy(alpha = 0.3f), RoundedCornerShape(8.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                if (producto.imagen.isNullOrEmpty()) {
-                    Text("Sin Imagen", color = Color.Gray)
-                } else {
-                    AsyncImage(
-                        model = producto.imagen,
-                        contentDescription = producto.nombre,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                }
+                AsyncImage(
+                    model = producto.imagen,
+                    contentDescription = producto.nombre,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Título
             Text(
                 text = producto.nombre,
                 style = MaterialTheme.typography.titleLarge,
@@ -182,43 +179,33 @@ fun ProductoCardGamer(
                 fontWeight = FontWeight.Bold
             )
 
-            // Precio
             Text(
                 text = "$${producto.precio}",
                 style = MaterialTheme.typography.headlineSmall,
-                color = GamerGreen, // Precio en verde
+                color = CatalogoGreen,
                 fontWeight = FontWeight.ExtraBold
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Botones de acción
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Botón Detalles
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(
                     onClick = onDetailClick,
                     modifier = Modifier.weight(1f),
                     border = BorderStroke(1.dp, Color.Gray),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
                 ) {
-                    Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.Info, null, Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
                     Text("Detalles")
                 }
 
-                // Botón Agregar
                 Button(
                     onClick = onAddClick,
                     modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = GamerGreen,
-                        contentColor = Color.Black // Texto negro sobre verde para contraste
-                    )
+                    colors = ButtonDefaults.buttonColors(containerColor = CatalogoGreen, contentColor = Color.Black)
                 ) {
-                    Icon(Icons.Default.AddShoppingCart, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.AddShoppingCart, null, Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
                     Text("Agregar")
                 }
