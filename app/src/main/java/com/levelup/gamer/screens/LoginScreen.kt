@@ -1,130 +1,101 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
-
 package com.levelup.gamer.screens
 
 import android.widget.Toast
-import android.util.Patterns
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.TextFieldValue
-import com.levelup.gamer.ui.deps
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.levelup.gamer.api.UsuarioApi
+import com.levelup.gamer.remote.RetrofitClient
+import com.levelup.gamer.repository.SessionRepository
+import com.levelup.gamer.viewmodel.UsuarioVM
 
 @Composable
 fun LoginScreen(
-    onLogin: () -> Unit,
-    onGoRegister: () -> Unit
+    onGoRegister: () -> Unit,
+    onGoCart: () -> Unit,
+    onLogin: () -> Unit // Callback para cuando el login es exitoso
 ) {
-    val d = deps()
     val context = LocalContext.current
 
-    var email by remember { mutableStateOf(TextFieldValue("")) }
-    var password by remember { mutableStateOf(TextFieldValue("")) }
-    var showPass by remember { mutableStateOf(false) }
+    // 1. Configuramos la inyección de dependencias manual
+    val factory = remember {
+        // Creamos la API usando Retrofit
+        val api = RetrofitClient.retrofit.create(UsuarioApi::class.java)
+        // Creamos el repositorio pasando Contexto y API
+        val repository = SessionRepository(context, api)
+        // Creamos la Factory del ViewModel
+        UsuarioVM.Factory(repository)
+    }
 
-    var showEmailError by remember { mutableStateOf(false) }
-    var showPassError by remember { mutableStateOf(false) }
+    // 2. Obtenemos el ViewModel usando la factory
+    val vm: UsuarioVM = viewModel(factory = factory)
 
-    val correo = email.text.trim()
-    val pass = password.text.trim()
-
-    val isEmailValid = correo.isNotEmpty() && Patterns.EMAIL_ADDRESS.matcher(correo).matches()
-    val isPassValid = pass.length >= 4
-
-    val isFormValid = isEmailValid && isPassValid
+    // Estados locales para los campos de texto
+    val email = remember { mutableStateOf("") }
+    val password = remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(20.dp),
         verticalArrangement = Arrangement.Center
     ) {
+        Text(text = "Iniciar sesión", style = MaterialTheme.typography.headlineMedium)
 
-        Text("Level-Up Gamer", style = MaterialTheme.typography.headlineSmall)
         Spacer(modifier = Modifier.height(20.dp))
 
-
+        // Campo para el correo electrónico
         OutlinedTextField(
-            value = email,
-            onValueChange = {
-                email = it
-                if (showEmailError) showEmailError = false
-            },
-            label = { Text("Email") },
-            modifier = Modifier.fillMaxWidth(),
-            isError = showEmailError || (correo.isNotEmpty() && !isEmailValid),
-            supportingText = {
-                if (showEmailError || (correo.isNotEmpty() && !isEmailValid)) {
-                    Text("Correo inválido (ej: nombre@dominio.com)")
-                }
-            },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
+            value = email.value,
+            onValueChange = { email.value = it },
+            label = { Text("Correo electrónico") },
+            modifier = Modifier.fillMaxWidth()
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
+        // Campo para la contraseña
         OutlinedTextField(
-            value = password,
-            onValueChange = {
-                password = it
-                if (showPassError) showPassError = false
-            },
+            value = password.value,
+            onValueChange = { password.value = it },
             label = { Text("Contraseña") },
-            modifier = Modifier.fillMaxWidth(),
-            isError = showPassError || (pass.isNotEmpty() && !isPassValid),
-            supportingText = {
-                if (showPassError || (pass.isNotEmpty() && !isPassValid)) {
-                    Text("La contraseña debe tener al menos 4 caracteres")
-                }
-            },
-            visualTransformation = if (showPass) VisualTransformation.None else PasswordVisualTransformation(),
-            trailingIcon = {
-                TextButton(onClick = { showPass = !showPass }) {
-                    Text(if (showPass) "Ocultar" else "Ver")
-                }
-            }
+            visualTransformation = PasswordVisualTransformation(),
+            modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
-
+        // Botón para iniciar sesión
         Button(
             onClick = {
-                if (!isEmailValid) showEmailError = true
-                if (!isPassValid) showPassError = true
-                if (!isFormValid) return@Button
-
-                d.usuarioVM.login(
-                    email = correo,
-                    password = pass
-                ) { ok ->
+                vm.login(email.value, password.value) { ok ->
                     if (ok) {
+                        // Si el login es correcto, ejecutamos el callback
                         onLogin()
                     } else {
-                        Toast.makeText(context, "Credenciales inválidas", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            context,
+                            "Correo o contraseña incorrectos",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                 }
             },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = isFormValid
+            modifier = Modifier.fillMaxWidth()
         ) {
             Text("Ingresar")
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(Modifier.height(16.dp))
 
-        TextButton(
-            onClick = onGoRegister,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Crear cuenta (18+)")
+        // Botón para ir a la pantalla de registro
+        TextButton(onClick = { onGoRegister() }) {
+            Text("¿No tienes cuenta? Regístrate aquí")
         }
     }
 }

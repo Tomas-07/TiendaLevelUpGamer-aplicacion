@@ -1,21 +1,23 @@
 package com.levelup.gamer.api
 
-import com.levelup.gamer.model.ProductoDto
+import com.levelup.gamer.model.Producto
 import retrofit2.http.*
 
 interface ProductoApi {
-    @GET("api/productos")
-    suspend fun getProductos(): List<ProductoDto>
 
-    @GET("api/productos/{id}")
-    suspend fun getProducto(@Path("id") id: Long): ProductoDto
+    // CORREGIDO: Quitamos el "api/" porque ya está en el RetrofitClient
+    @GET("productos")
+    suspend fun listar(): List<Producto>
 
-    @POST("api/productos")
-    suspend fun create(@Body p: ProductoDto): ProductoDto
+    @GET("productos/{id}")
+    suspend fun obtener(@Path("id") id: Long): Producto
 
-    @PUT("api/productos/{id}")
-    suspend fun update(@Path("id") id: Long, @Body p: ProductoDto): ProductoDto
+    @POST("productos")
+    suspend fun crear(@Body p: Producto): Producto
 
-    @DELETE("api/productos/{id}")
-    suspend fun delete(@Path("id") id: Long)
+    @PUT("productos/{id}")
+    suspend fun actualizar(@Path("id") id: Long, @Body p: Producto): Producto
+
+    @DELETE("productos/{id}")
+    suspend fun eliminar(@Path("id") id: Long)
 }

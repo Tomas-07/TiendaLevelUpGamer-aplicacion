@@ -1,6 +1,7 @@
 package com.levelup.gamer.model
 
 data class Producto(
+    val id: Long,
     val codigo: String,
     val categoria: String,
     val nombre: String,

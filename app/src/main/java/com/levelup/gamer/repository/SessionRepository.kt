@@ -3,19 +3,24 @@ package com.levelup.gamer.repository
 import android.content.Context
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
+import com.levelup.gamer.api.UsuarioApi
 import com.levelup.gamer.model.Usuario
+import com.levelup.gamer.model.UsuarioDto
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 private val Context.dataStore by preferencesDataStore("levelup_prefs")
 
-class SessionRepository(private val context: Context) {
+class SessionRepository(
+    private val context: Context,
+    private val api: UsuarioApi
+) {
 
     companion object {
+        val KEY_USER_ID = longPreferencesKey("user_id")
         val KEY_NAME = stringPreferencesKey("name")
         val KEY_EMAIL = stringPreferencesKey("email")
-        val KEY_PASSWORD = stringPreferencesKey("password")   // ← NUEVO
         val KEY_AGE = intPreferencesKey("age")
         val KEY_DUOC = booleanPreferencesKey("duoc")
         val KEY_PUNTOS = intPreferencesKey("puntos")
@@ -32,33 +37,71 @@ class SessionRepository(private val context: Context) {
     val puntos: Flow<Int> = context.dataStore.data.map { it[KEY_PUNTOS] ?: 0 }
     val nivel: Flow<Int> = context.dataStore.data.map { it[KEY_NIVEL] ?: 1 }
     val referidoPor: Flow<String?> = context.dataStore.data.map { it[KEY_REFERIDO] }
-    val photoUri: Flow<String?> = context.dataStore.data.map { it[KEY_PHOTO] }
+    val photo: Flow<String?> = context.dataStore.data.map { it[KEY_PHOTO] }
 
-    // ---------------------------
-    // REGISTRO REAL
-    // ---------------------------
-    suspend fun register(usuario: Usuario, password: String) {
-        context.dataStore.edit { p ->
-            p[KEY_NAME] = usuario.nombre
-            p[KEY_EMAIL] = usuario.email
-            p[KEY_PASSWORD] = password
-            p[KEY_AGE] = usuario.edad
-            p[KEY_DUOC] = usuario.esDuoc
-            p[KEY_PUNTOS] = usuario.puntos
-            p[KEY_NIVEL] = usuario.nivel
-            usuario.referidoPor?.let { p[KEY_REFERIDO] = it }
+    // -------------------------------
+    // LOGIN REAL
+    // -------------------------------
+    suspend fun login(email: String, password: String): Boolean {
+        return try {
+            val body = mapOf("email" to email, "password" to password)
+            val response = api.login(body)
+
+            if (!response.isSuccessful || response.body() == null) return false
+
+            saveUserInPrefs(response.body()!!)
+            true
+
+        } catch (e: Exception) {
+            false
         }
     }
 
-    // ---------------------------
-    // LOGIN REAL
-    // ---------------------------
-    suspend fun login(email: String, password: String): Boolean {
-        val prefs = context.dataStore.data.first()
-        val savedEmail = prefs[KEY_EMAIL]
-        val savedPass = prefs[KEY_PASSWORD]
+    // -------------------------------
+    // REGISTER REAL
+    // -------------------------------
+    suspend fun register(user: Usuario, password: String): Boolean {
+        return try {
+            val dto = UsuarioDto(
+                id = null,
+                nombre = user.nombre,
+                email = user.email,
+                edad = user.edad,
+                password = password,
+                esDuoc = user.esDuoc,
+                puntos = user.puntos,
+                nivel = user.nivel,
+                referidoPor = user.referidoPor
+            )
 
-        return email == savedEmail && password == savedPass
+            val response = api.register(dto)
+
+            response.isSuccessful
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    // -------------------------------
+    // GUARDAR USUARIO DEL BACKEND
+    // -------------------------------
+    private suspend fun saveUserInPrefs(user: Usuario) {
+        context.dataStore.edit { p ->
+            p[KEY_USER_ID] = user.id ?: 0L
+            p[KEY_NAME] = user.nombre
+            p[KEY_EMAIL] = user.email
+            p[KEY_AGE] = user.edad
+            p[KEY_DUOC] = user.esDuoc
+            p[KEY_PUNTOS] = user.puntos
+            p[KEY_NIVEL] = user.nivel
+
+            user.referidoPor?.let { p[KEY_REFERIDO] = it }
+        }
+    }
+
+    suspend fun currentUserId(): Long? {
+        val prefs = context.dataStore.data.first()
+        return prefs[KEY_USER_ID]
     }
 
     suspend fun logout() {
@@ -67,15 +110,17 @@ class SessionRepository(private val context: Context) {
 
     suspend fun addPuntos(delta: Int) {
         context.dataStore.edit { p ->
-            val cur = p[KEY_PUNTOS] ?: 0
-            val total = (cur + delta).coerceAtLeast(0)
+            val actual = p[KEY_PUNTOS] ?: 0
+            val total = (actual + delta).coerceAtLeast(0)
             p[KEY_PUNTOS] = total
             p[KEY_NIVEL] = calcNivel(total)
         }
     }
 
     suspend fun setPhoto(uri: String) {
-        context.dataStore.edit { p -> p[KEY_PHOTO] = uri }
+        context.dataStore.edit { p ->
+            p[KEY_PHOTO] = uri
+        }
     }
 
     private fun calcNivel(p: Int): Int = when {

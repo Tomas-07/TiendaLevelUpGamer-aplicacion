@@ -5,18 +5,23 @@ import retrofit2.http.*
 
 interface CarritoApi {
 
-    @GET("api/carrito/usuario/{usuarioId}")
-    suspend fun getCarrito(@Path("usuarioId") usuarioId: Long): List<CarritoItemDto>
+    // CORREGIDO: Quitamos el "api/" inicial porque ya está en la Base URL
 
-    @POST("api/carrito")
+    @GET("carrito/{usuarioId}")
+    suspend fun getCarrito(@Path("usuarioId") userId: Long): List<CarritoItemDto>
+
+    @POST("carrito/add")
     suspend fun add(@Body item: CarritoItemDto): CarritoItemDto
 
-    @PUT("api/carrito/{id}")
-    suspend fun updateCantidad(@Path("id") id: Long, @Body item: CarritoItemDto): CarritoItemDto
+    @PUT("carrito/update/{id}")
+    suspend fun updateCantidad(
+        @Path("id") id: Long,
+        @Body item: CarritoItemDto
+    ): CarritoItemDto
 
-    @DELETE("api/carrito/{id}")
+    @DELETE("carrito/delete/{id}")
     suspend fun delete(@Path("id") id: Long)
 
-    @DELETE("api/carrito/usuario/{usuarioId}")
-    suspend fun vaciar(@Path("usuarioId") usuarioId: Long)
+    @DELETE("carrito/vaciar/{usuarioId}")
+    suspend fun vaciar(@Path("usuarioId") userId: Long)
 }

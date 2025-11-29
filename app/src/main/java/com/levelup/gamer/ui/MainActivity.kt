@@ -47,7 +47,7 @@ class MainActivity : ComponentActivity() {
                     val sessionRepo  = remember { SessionRepository(ctx, usuarioApi) }
                     val carritoRepo  = remember { CarritoRepository(carritoApi) }
 
-                    //  VIEWMODELS
+                    // VIEWMODELS
                     val productoVM = remember { ProductoVM(productoRepo) }
                     val usuarioVM  = remember { UsuarioVM(sessionRepo) }
                     val carritoVM  = remember { CarritoVM(carritoRepo, productoRepo, sessionRepo) }
@@ -68,8 +68,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-
-
 data class Deps(
     val productoVM: ProductoVM,
     val carritoVM: CarritoVM,
@@ -88,12 +86,4 @@ fun ProvideDeps(d: Deps, content: @Composable () -> Unit) {
     CompositionLocalProvider(LocalDeps provides d) {
         content()
     }
-}
-
-
-
-fun openWhatsApp(number: String, message: String, activity: ComponentActivity) {
-    val uri = Uri.parse("https://wa.me/$number?text=" + Uri.encode(message))
-    val i = Intent(Intent.ACTION_VIEW, uri)
-    activity.startActivity(i)
 }

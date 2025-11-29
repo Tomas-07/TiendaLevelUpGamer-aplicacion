@@ -1,10 +1,13 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
-
 package com.levelup.gamer.screens
 
+import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.Info
@@ -12,61 +15,124 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
+import com.levelup.gamer.api.CarritoApi
+import com.levelup.gamer.api.ProductoApi
+import com.levelup.gamer.api.UsuarioApi
 import com.levelup.gamer.model.Producto
-import com.levelup.gamer.ui.deps
+import com.levelup.gamer.remote.RetrofitClient
+import com.levelup.gamer.repository.CarritoRepository
+import com.levelup.gamer.repository.ProductoRepository
+import com.levelup.gamer.repository.SessionRepository
+import com.levelup.gamer.viewmodel.CarritoVM
+import com.levelup.gamer.viewmodel.ProductoVM
 import kotlinx.coroutines.launch
 
+// Colores privados para evitar conflicto
+private val CatalogoGreen = Color(0xFF00FF00)
+private val CatalogoDark = Color(0xFF121212)
+private val CatalogoCard = Color(0xFF1E1E1E)
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CatalogoScreen(
     onGoCart: () -> Unit,
     onGoPerfil: () -> Unit,
-    onGoDetail: (String) -> Unit
+    onGoDetail: (Long) -> Unit
 ) {
-    val d = deps()
-    val productos by d.productoVM.items.collectAsState()
+    val context = LocalContext.current
 
-    LaunchedEffect(Unit) { d.productoVM.cargar() }
+    val retrofit = RetrofitClient.retrofit
+    val productoApi = retrofit.create(ProductoApi::class.java)
+    val carritoApi = retrofit.create(CarritoApi::class.java)
+    val usuarioApi = retrofit.create(UsuarioApi::class.java)
 
-    val snackbar = remember { SnackbarHostState() }
+    val productoRepo = remember { ProductoRepository(productoApi) }
+    val carritoRepo = remember { CarritoRepository(carritoApi) }
+    val sessionRepo = remember { SessionRepository(context, usuarioApi) }
+
+    val productoVM: ProductoVM = viewModel(factory = ProductoVM.Factory(productoRepo))
+    val carritoVM: CarritoVM = viewModel(factory = CarritoVM.Factory(carritoRepo, productoRepo, sessionRepo))
+
+    val productos by productoVM.productos.collectAsState()
+    val cartItems by carritoVM.items.collectAsState()
+    val itemCount = cartItems.sumOf { it.cantidad }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Catálogo") },
+                title = { Text("Catálogo Gamer", color = Color.White, fontWeight = FontWeight.Bold) },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = CatalogoGreen),
                 actions = {
                     IconButton(onClick = onGoPerfil) {
-                        Icon(Icons.Filled.Person, contentDescription = "Perfil")
+                        Icon(Icons.Default.Person, contentDescription = "Perfil", tint = Color.Black)
                     }
-
                     IconButton(onClick = onGoCart) {
-                        BadgedBox(badge = {
-                            val c = d.carritoVM.count()
-                            if (c > 0) Badge { Text(c.toString()) }
-                        }) {
-                            Icon(Icons.Filled.ShoppingCart, "Carrito")
+                        BadgedBox(
+                            badge = { if (itemCount > 0) Badge { Text("$itemCount") } }
+                        ) {
+                            Icon(Icons.Default.ShoppingCart, contentDescription = "Carrito", tint = Color.Black)
                         }
                     }
                 }
             )
         },
-        snackbarHost = { SnackbarHost(hostState = snackbar) }
-    ) { padding ->
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = onGoCart,
+                containerColor = CatalogoGreen,
+                contentColor = Color.Black,
+                icon = {
+                    BadgedBox(
+                        badge = { if (itemCount > 0) Badge { Text("$itemCount") } }
+                    ) {
+                        Icon(Icons.Default.ShoppingCart, "Ver Carrito")
+                    }
+                },
+                text = { Text("Ver Carrito", fontWeight = FontWeight.Bold) }
+            )
+        },
+        containerColor = CatalogoDark
+    ) { paddingValues ->
 
-        Column(modifier = Modifier.padding(padding).padding(12.dp)) {
-
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                items(productos) { p ->
-                    ProductoItem(
-                        p = p,
-                        onAdd = { d.carritoVM.add(it) },
-                        onDetail = { onGoDetail(p.codigo) },
-                        snackbar = snackbar
-                    )
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp)
+        ) {
+            if (productos.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = CatalogoGreen)
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(bottom = 80.dp)
+                ) {
+                    // CORRECCIÓN IMPORTANTE: Agregamos 'key' para que la lista sea estable y no repita items
+                    items(
+                        items = productos,
+                        key = { it.id }
+                    ) { producto ->
+                        ProductoCardGamer(
+                            producto = producto,
+                            onDetailClick = { onGoDetail(producto.id) },
+                            onAddClick = {
+                                carritoVM.add(producto)
+                                Toast.makeText(context, "¡${producto.nombre} agregado!", Toast.LENGTH_SHORT).show()
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -74,79 +140,76 @@ fun CatalogoScreen(
 }
 
 @Composable
-private fun ProductoItem(
-    p: Producto,
-    onAdd: (Producto) -> Unit,
-    onDetail: () -> Unit,
-    snackbar: SnackbarHostState
+fun ProductoCardGamer(
+    producto: Producto,
+    onDetailClick: () -> Unit,
+    onAddClick: () -> Unit
 ) {
-    val haptics = LocalHapticFeedback.current
-    val scope = rememberCoroutineScope()
-
-    var added by remember { mutableStateOf(false) }
-    val scale by androidx.compose.animation.core.animateFloatAsState(
-        targetValue = if (added) 1.05f else 1f,
-        animationSpec = androidx.compose.animation.core.tween(160),
-        label = "scaleAnim"
-    )
-
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(12.dp)) {
-
-            Text(p.nombre, style = MaterialTheme.typography.titleMedium)
-            Text("$" + "%,d".format(p.precio))
-
-            if (p.descripcion.isNotBlank()) {
-                Spacer(Modifier.height(4.dp))
-                Text(p.descripcion)
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onDetailClick),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = CatalogoCard),
+        border = BorderStroke(2.dp, CatalogoGreen),
+        elevation = CardDefaults.cardElevation(8.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .background(Color.Black.copy(alpha = 0.3f), RoundedCornerShape(8.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                AsyncImage(
+                    model = producto.imagen,
+                    contentDescription = producto.nombre,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
             }
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            Text(
+                text = producto.nombre,
+                style = MaterialTheme.typography.titleLarge,
+                color = Color.White,
+                fontWeight = FontWeight.Bold
+            )
 
+            Text(
+                text = "$${producto.precio}",
+                style = MaterialTheme.typography.headlineSmall,
+                color = CatalogoGreen,
+                fontWeight = FontWeight.ExtraBold
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(
-                    onClick = onDetail,
-                    modifier = Modifier.weight(1f)
+                    onClick = onDetailClick,
+                    modifier = Modifier.weight(1f),
+                    border = BorderStroke(1.dp, Color.Gray),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
                 ) {
-                    Icon(Icons.Filled.Info, contentDescription = null)
-                    Spacer(Modifier.width(6.dp))
+                    Icon(Icons.Default.Info, null, Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
                     Text("Detalles")
                 }
 
                 Button(
-                    onClick = {
-                        onAdd(p)
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        added = true
-
-                        scope.launch {
-                            snackbar.showSnackbar(
-                                "Agregado: ${p.nombre}",
-                                withDismissAction = false,
-                                duration = SnackbarDuration.Short
-                            )
-                        }
-                    },
-                    modifier = Modifier
-                        .weight(1f)
-                        .graphicsLayer(scaleX = scale, scaleY = scale)
+                    onClick = onAddClick,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(containerColor = CatalogoGreen, contentColor = Color.Black)
                 ) {
-                    Icon(Icons.Filled.AddShoppingCart, null)
-                    Spacer(Modifier.width(6.dp))
+                    Icon(Icons.Default.AddShoppingCart, null, Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
                     Text("Agregar")
                 }
             }
-        }
-    }
-
-    LaunchedEffect(added) {
-        if (added) {
-            kotlinx.coroutines.delay(180)
-            added = false
         }
     }
 }

@@ -2,44 +2,19 @@ package com.levelup.gamer.repository
 
 import com.levelup.gamer.api.ProductoApi
 import com.levelup.gamer.model.Producto
-import com.levelup.gamer.model.ProductoDto
+import com.levelup.gamer.api.ApiClient // Asegúrate de tener esta clase para Retrofit
 
-class ProductoRepository(private val api: ProductoApi) {
+class ProductoRepository(
+    private val api: ProductoApi
+) {
 
-    private var productos: List<Producto> = emptyList()
+    suspend fun all(): List<Producto> = api.listar()
 
-    suspend fun load() {
-        val remote = api.getProductos()
-        productos = remote.map { it.toModel() }
-    }
+    suspend fun get(id: Long): Producto = api.obtener(id)
 
-    fun all(): List<Producto> = productos
+    suspend fun crear(p: Producto): Producto = api.crear(p)
 
-    fun byCodigo(cod: String): Producto? =
-        productos.find { it.codigo == cod }
+    suspend fun actualizar(id: Long, p: Producto): Producto = api.actualizar(id, p)
 
-    fun byCategoria(cat: String): List<Producto> =
-        productos.filter { it.categoria.equals(cat, true) }
-
-    fun search(query: String): List<Producto> =
-        productos.filter { it.nombre.contains(query, true) || it.categoria.contains(query, true) }
-
-    fun filter(cat: String?, min: Int?, max: Int?): List<Producto> =
-        productos.filter { p ->
-            (cat == null || p.categoria.equals(cat, true)) &&
-                    (min == null || p.precio >= min) &&
-                    (max == null || p.precio <= max)
-        }
+    suspend fun eliminar(id: Long) = api.eliminar(id)
 }
-
-private fun ProductoDto.toModel() = Producto(
-    codigo = codigo,
-    categoria = categoria,
-    nombre = nombre,
-    precio = precio,
-    imagen = imagen,
-    descripcion = descripcion,
-    stock = stock,
-    destacado = destacado
-)
-
