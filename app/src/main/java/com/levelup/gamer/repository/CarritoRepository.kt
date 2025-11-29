@@ -10,27 +10,25 @@ class CarritoRepository(private val api: CarritoApi) {
         api.getCarrito(usuarioId)
 
     suspend fun agregar(usuarioId: Long, producto: Producto, cantidad: Int) {
-
-        api.add(
-            CarritoItemDto(
-                id = null,
-                usuarioId = usuarioId,
-                productoId = producto.id,      // ← ID REAL DEL PRODUCTO
-                cantidad = cantidad
-            )
+        // Creamos el DTO para enviar al backend
+        val itemDto = CarritoItemDto(
+            id = null, // Es nuevo, el ID lo genera la BD
+            usuarioId = usuarioId,
+            productoId = producto.id,
+            cantidad = cantidad
         )
+        api.add(itemDto)
     }
 
     suspend fun actualizarCantidad(itemId: Long, cantidad: Int) {
-        api.updateCantidad(
+        // Para actualizar, usualmente solo importa el ID y la nueva cantidad
+        val itemDto = CarritoItemDto(
             id = itemId,
-            item = CarritoItemDto(
-                id = itemId,
-                usuarioId = null,             // el backend NO usa esto en update
-                productoId = null,            // idem
-                cantidad = cantidad
-            )
+            usuarioId = null,
+            productoId = null,
+            cantidad = cantidad
         )
+        api.updateCantidad(itemId, itemDto)
     }
 
     suspend fun eliminar(itemId: Long) =

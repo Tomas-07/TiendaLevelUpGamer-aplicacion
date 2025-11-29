@@ -1,7 +1,9 @@
 package com.levelup.gamer.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.CreationExtras
 import com.levelup.gamer.model.Usuario
 import com.levelup.gamer.repository.SessionRepository
 import kotlinx.coroutines.flow.SharingStarted
@@ -17,6 +19,7 @@ class UsuarioVM(private val session: SessionRepository) : ViewModel() {
 
     val isLoggedIn = session.isLoggedIn.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
+    // Estados para lectura (si los necesitas en otra pantalla)
     val nombre   = session.nombre.stateIn(viewModelScope, SharingStarted.Eagerly, "")
     val email    = session.email.stateIn(viewModelScope, SharingStarted.Eagerly, "")
     val edad     = session.edad.stateIn(viewModelScope, SharingStarted.Eagerly, 0)
@@ -50,8 +53,9 @@ class UsuarioVM(private val session: SessionRepository) : ViewModel() {
     private fun validarConfirmacion(pass: String, confirm: String): String? =
         if (pass != confirm) "Las contraseñas no coinciden" else null
 
+    // VALIDACIÓN DE EDAD: MAYOR O IGUAL A 18
     private fun validarEdad(edad: Int): String? =
-        if (edad <= 0) "La edad debe ser mayor a 0" else null
+        if (edad < 18) "Debes ser mayor de 18 años para registrarte" else null
 
 
     // --------------------------------------------------------------------
@@ -65,17 +69,15 @@ class UsuarioVM(private val session: SessionRepository) : ViewModel() {
     ) {
         viewModelScope.launch {
 
-            // 1) Validaciones de datos
+            // 1) Validaciones de seguridad antes de enviar
             validarNombre(usuario.nombre)?.let { return@launch callback(RegisterResult.Error(it)) }
             validarEmail(usuario.email)?.let { return@launch callback(RegisterResult.Error(it)) }
             validarEdad(usuario.edad)?.let { return@launch callback(RegisterResult.Error(it)) }
             validarPassword(password)?.let { return@launch callback(RegisterResult.Error(it)) }
             validarConfirmacion(password, confirmPass)?.let { return@launch callback(RegisterResult.Error(it)) }
 
-            // 2) ¿Es correo DUOC?
+            // 2) Verificar si es correo DUOC
             val esDuoc = usuario.email.trim().lowercase().endsWith("@duoc.cl")
-
-            // Marcamos si es DUOC antes de registrar
             val usuarioFinal = usuario.copy(esDuoc = esDuoc)
 
             // 3) Enviar registro al backend
@@ -109,4 +111,17 @@ class UsuarioVM(private val session: SessionRepository) : ViewModel() {
     fun setPhoto(uri: String) = viewModelScope.launch { session.setPhoto(uri) }
 
     fun logout() = viewModelScope.launch { session.logout() }
+
+    // --------------------------------------------------------------------
+    // -------------------------   FACTORY   -----------------------------
+    // --------------------------------------------------------------------
+    class Factory(private val sessionRepository: SessionRepository) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
+            if (modelClass.isAssignableFrom(UsuarioVM::class.java)) {
+                return UsuarioVM(sessionRepository) as T
+            }
+            throw IllegalArgumentException("Unknown ViewModel class")
+        }
+    }
 }

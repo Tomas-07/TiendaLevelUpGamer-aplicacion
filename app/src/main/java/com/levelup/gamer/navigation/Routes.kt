@@ -7,5 +7,8 @@ enum class Route {
     Catalogo,
     Carrito,
     Perfil,
+
     Detalle
 }
+
+

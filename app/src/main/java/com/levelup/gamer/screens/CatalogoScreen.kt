@@ -1,10 +1,9 @@
 package com.levelup.gamer.screens
 
 import android.widget.Toast
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,19 +17,29 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.levelup.gamer.api.CarritoApi
+import com.levelup.gamer.api.ProductoApi
+import com.levelup.gamer.api.UsuarioApi
 import com.levelup.gamer.model.Producto
-import com.levelup.gamer.ui.deps
+import com.levelup.gamer.remote.RetrofitClient
+import com.levelup.gamer.repository.CarritoRepository
+import com.levelup.gamer.repository.ProductoRepository
+import com.levelup.gamer.repository.SessionRepository
+import com.levelup.gamer.viewmodel.CarritoVM
+import com.levelup.gamer.viewmodel.ProductoVM
 import kotlinx.coroutines.launch
+
+// Colores personalizados estilo Gamer
+val GamerGreen = Color(0xFF00FF00)
+val DarkBackground = Color(0xFF121212)
+val CardBackground = Color(0xFF1E1E1E)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,73 +48,86 @@ fun CatalogoScreen(
     onGoPerfil: () -> Unit,
     onGoDetail: (Long) -> Unit
 ) {
-    val d = deps()  // Inyectamos dependencias
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
-    // Estado para almacenar productos cargados desde el ViewModel
-    val productos by d.productoVM.productos.collectAsState()
+    // 1. Configuración de dependencias (Retrofit + Repositorios)
+    val retrofit = RetrofitClient.retrofit
+    val productoApi = retrofit.create(ProductoApi::class.java)
+    val carritoApi = retrofit.create(CarritoApi::class.java)
+    val usuarioApi = retrofit.create(UsuarioApi::class.java)
 
-    // Cargar productos desde el backend
-    LaunchedEffect(Unit) {
-        d.productoVM.cargar()
-    }
+    val productoRepo = remember { ProductoRepository(productoApi) }
+    val carritoRepo = remember { CarritoRepository(carritoApi) }
+    val sessionRepo = remember { SessionRepository(context, usuarioApi) }
 
-    // Estado para mostrar mensajes de snackbar
-    val snackbar = remember { SnackbarHostState() }
+    // 2. ViewModels
+    val productoVM: ProductoVM = viewModel(
+        factory = ProductoVM.Factory(productoRepo)
+    )
+    val carritoVM: CarritoVM = viewModel(
+        factory = CarritoVM.Factory(carritoRepo, productoRepo, sessionRepo)
+    )
+
+    // 3. Estado
+    val productos by productoVM.productos.collectAsState()
+    val cartItems by carritoVM.items.collectAsState() // Para saber cuántos items hay (opcional)
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Catálogo Gamer", color = Color.White) },
+                title = { Text("Catálogo Gamer", color = Color.White, fontWeight = FontWeight.Bold) },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = GamerGreen),
                 actions = {
-                    // Botón de perfil
                     IconButton(onClick = onGoPerfil) {
-                        Icon(Icons.Filled.Person, contentDescription = "Perfil", tint = Color.White)
+                        Icon(Icons.Default.Person, contentDescription = "Perfil", tint = Color.Black)
                     }
-
-                    // Botón de carrito con badge de cantidad de productos
                     IconButton(onClick = onGoCart) {
-                        BadgedBox(
-                            badge = {
-                                val c = d.carritoVM.count()  // Obtenemos cantidad de productos en carrito
-                                if (c > 0) Badge { Text(c.toString()) }
-                            }
-                        ) {
-                            Icon(Icons.Filled.ShoppingCart, "Carrito", tint = Color.White)
-                        }
+                        // Badge opcional: Podrías mostrar un numerito aquí si quisieras
+                        Icon(Icons.Default.ShoppingCart, contentDescription = "Carrito", tint = Color.Black)
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
-                modifier = Modifier.background(
-                    Brush.horizontalGradient(listOf(Color(0xFF00E676), Color(0xFF00C853)))
-                )
+                }
             )
         },
-        snackbarHost = { SnackbarHost(hostState = snackbar) }
-    ) { padding ->
+        floatingActionButton = {
+            // BOTÓN FLOTANTE "VER CARRITO"
+            ExtendedFloatingActionButton(
+                onClick = onGoCart,
+                containerColor = GamerGreen,
+                contentColor = Color.Black,
+                icon = { Icon(Icons.Default.ShoppingCart, "Ver Carrito") },
+                text = { Text("Ver Carrito", fontWeight = FontWeight.Bold) }
+            )
+        },
+        containerColor = DarkBackground
+    ) { paddingValues ->
 
-        // Contenido de la pantalla con un fondo degradado
-        Box(
-            Modifier
-                .padding(padding)
+        Column(
+            modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        listOf(Color(0xFF1C1C1C), Color.Black)
-                    )
-                )
-                .padding(14.dp)
+                .padding(paddingValues)
+                .padding(16.dp)
         ) {
-            // Lista de productos usando LazyColumn
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                items(productos) { p ->
-                    ProductoCard(
-                        p = p,
-                        onAdd = { d.carritoVM.add(it) }, // Agregar al carrito
-                        onDetail = { onGoDetail(p.id) }, // Ver detalles del producto
-                        snackbar = snackbar
-                    )
+            if (productos.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = GamerGreen)
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(bottom = 80.dp) // Espacio para que el FAB no tape el último item
+                ) {
+                    items(productos) { producto ->
+                        ProductoCardGamer(
+                            producto = producto,
+                            onDetailClick = { onGoDetail(producto.id) },
+                            onAddClick = {
+                                carritoVM.add(producto)
+                                Toast.makeText(context, "¡${producto.nombre} agregado!", Toast.LENGTH_SHORT).show()
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -113,93 +135,91 @@ fun CatalogoScreen(
 }
 
 @Composable
-fun ProductoCard(
-    p: Producto,
-    onAdd: (Producto) -> Unit,
-    onDetail: () -> Unit,
-    snackbar: SnackbarHostState
+fun ProductoCardGamer(
+    producto: Producto,
+    onDetailClick: () -> Unit,
+    onAddClick: () -> Unit
 ) {
-    val scope = rememberCoroutineScope()
-    var pressed by remember { mutableStateOf(false) }
-
-    val scale by animateFloatAsState(
-        targetValue = if (pressed) 1.02f else 1f,
-        animationSpec = tween(160)
-    )
-
-    // Crear un Card con animación y color dependiendo de si es destacado
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .graphicsLayer(scaleX = scale, scaleY = scale)
-            .animateContentSize(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A2A)),
-        elevation = CardDefaults.cardElevation(10.dp)
+            .clickable(onClick = onDetailClick),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = CardBackground),
+        border = BorderStroke(2.dp, GamerGreen), // Borde verde neón
+        elevation = CardDefaults.cardElevation(8.dp)
     ) {
-        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            // Imagen del producto
-            AsyncImage(
-                model = p.imagen,
-                contentDescription = p.nombre,
-                contentScale = ContentScale.Crop,
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            // Imagen (Placeholder o Real)
+            Box(
                 modifier = Modifier
-                    .height(180.dp)
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-            )
+                    .height(180.dp)
+                    .background(Color.Black.copy(alpha = 0.3f), RoundedCornerShape(8.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                if (producto.imagen.isNullOrEmpty()) {
+                    Text("Sin Imagen", color = Color.Gray)
+                } else {
+                    AsyncImage(
+                        model = producto.imagen,
+                        contentDescription = producto.nombre,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+            }
 
-            // Nombre del producto
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Título
             Text(
-                p.nombre,
+                text = producto.nombre,
                 style = MaterialTheme.typography.titleLarge,
                 color = Color.White,
                 fontWeight = FontWeight.Bold
             )
 
-            // Precio del producto
+            // Precio
             Text(
-                "$" + "%,d".format(p.precio),
+                text = "$${producto.precio}",
                 style = MaterialTheme.typography.headlineSmall,
-                color = Color(0xFF00E676),
+                color = GamerGreen, // Precio en verde
                 fontWeight = FontWeight.ExtraBold
             )
 
+            Spacer(modifier = Modifier.height(16.dp))
+
             // Botones de acción
             Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Ver detalles del producto
+                // Botón Detalles
                 OutlinedButton(
-                    onClick = onDetail,
+                    onClick = onDetailClick,
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(14.dp)
+                    border = BorderStroke(1.dp, Color.Gray),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
                 ) {
-                    Icon(Icons.Filled.Info, contentDescription = null, tint = Color.White)
-                    Spacer(Modifier.width(6.dp))
-                    Text("Detalles", color = Color.White)
+                    Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Detalles")
                 }
 
-                // Agregar al carrito
+                // Botón Agregar
                 Button(
-                    onClick = {
-                        pressed = true
-                        onAdd(p) // Agregar al carrito
-                        scope.launch {
-                            snackbar.showSnackbar("Agregado: ${p.nombre}")
-                        }
-                        pressed = false
-                    },
+                    onClick = onAddClick,
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF00E676),
-                        contentColor = Color.Black
+                        containerColor = GamerGreen,
+                        contentColor = Color.Black // Texto negro sobre verde para contraste
                     )
                 ) {
-                    Icon(Icons.Filled.AddShoppingCart, null)
-                    Spacer(Modifier.width(6.dp))
+                    Icon(Icons.Default.AddShoppingCart, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
                     Text("Agregar")
                 }
             }

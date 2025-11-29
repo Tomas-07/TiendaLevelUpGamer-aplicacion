@@ -5,6 +5,8 @@ package com.levelup.gamer.screens
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
@@ -24,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.LocalContext
 import com.levelup.gamer.ui.deps
-import com.levelup.gamer.ui.openWhatsApp
+
 
 fun Context.getActivity(): Activity? = when (this) {
     is Activity -> this
@@ -179,3 +181,10 @@ private fun calcProgresoNivel(puntos: Int): Float = when {
     puntos >= 120 -> (puntos - 120) / 180f
     else -> puntos / 120f
 }
+
+fun openWhatsApp(number: String, message: String, activity: ComponentActivity) {
+    val uri = Uri.parse("https://wa.me/$number?text=" + Uri.encode(message))
+    val intent = Intent(Intent.ACTION_VIEW, uri)
+    activity.startActivity(intent)
+}
+

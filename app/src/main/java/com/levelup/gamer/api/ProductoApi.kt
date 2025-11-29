@@ -5,18 +5,19 @@ import retrofit2.http.*
 
 interface ProductoApi {
 
-    @GET("api/productos")
+    // CORREGIDO: Quitamos el "api/" porque ya está en el RetrofitClient
+    @GET("productos")
     suspend fun listar(): List<Producto>
 
-    @GET("api/productos/{id}")
+    @GET("productos/{id}")
     suspend fun obtener(@Path("id") id: Long): Producto
 
-    @POST("api/productos")
+    @POST("productos")
     suspend fun crear(@Body p: Producto): Producto
 
-    @PUT("api/productos/{id}")
+    @PUT("productos/{id}")
     suspend fun actualizar(@Path("id") id: Long, @Body p: Producto): Producto
 
-    @DELETE("api/productos/{id}")
+    @DELETE("productos/{id}")
     suspend fun eliminar(@Path("id") id: Long)
 }

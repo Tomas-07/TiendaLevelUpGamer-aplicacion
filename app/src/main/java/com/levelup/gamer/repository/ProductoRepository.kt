@@ -2,6 +2,7 @@ package com.levelup.gamer.repository
 
 import com.levelup.gamer.api.ProductoApi
 import com.levelup.gamer.model.Producto
+import com.levelup.gamer.api.ApiClient // Asegúrate de tener esta clase para Retrofit
 
 class ProductoRepository(
     private val api: ProductoApi
