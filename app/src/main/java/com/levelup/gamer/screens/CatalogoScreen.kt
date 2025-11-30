@@ -25,8 +25,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.levelup.gamer.api.CarritoApi
-import com.levelup.gamer.api.ProductoApi
-import com.levelup.gamer.api.UsuarioApi
 import com.levelup.gamer.model.Producto
 import com.levelup.gamer.remote.RetrofitClient
 import com.levelup.gamer.repository.CarritoRepository
@@ -34,7 +32,6 @@ import com.levelup.gamer.repository.ProductoRepository
 import com.levelup.gamer.repository.SessionRepository
 import com.levelup.gamer.viewmodel.CarritoVM
 import com.levelup.gamer.viewmodel.ProductoVM
-import kotlinx.coroutines.launch
 
 // Colores privados para evitar conflicto
 private val CatalogoGreen = Color(0xFF00FF00)
@@ -51,13 +48,11 @@ fun CatalogoScreen(
     val context = LocalContext.current
 
     val retrofit = RetrofitClient.retrofit
-    val productoApi = retrofit.create(ProductoApi::class.java)
     val carritoApi = retrofit.create(CarritoApi::class.java)
-    val usuarioApi = retrofit.create(UsuarioApi::class.java)
 
-    val productoRepo = remember { ProductoRepository(productoApi) }
+    val productoRepo = remember { ProductoRepository() }
     val carritoRepo = remember { CarritoRepository(carritoApi) }
-    val sessionRepo = remember { SessionRepository(context, usuarioApi) }
+    val sessionRepo = remember { SessionRepository(context) } // CORREGIDO
 
     val productoVM: ProductoVM = viewModel(factory = ProductoVM.Factory(productoRepo))
     val carritoVM: CarritoVM = viewModel(factory = CarritoVM.Factory(carritoRepo, productoRepo, sessionRepo))
@@ -119,7 +114,6 @@ fun CatalogoScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     contentPadding = PaddingValues(bottom = 80.dp)
                 ) {
-                    // CORRECCIÓN IMPORTANTE: Agregamos 'key' para que la lista sea estable y no repita items
                     items(
                         items = productos,
                         key = { it.id }

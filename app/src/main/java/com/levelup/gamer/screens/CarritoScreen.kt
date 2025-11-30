@@ -23,9 +23,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.levelup.gamer.api.CarritoApi
-import com.levelup.gamer.api.ProductoApi
-import com.levelup.gamer.api.UsuarioApi
-import com.levelup.gamer.model.Producto
 import com.levelup.gamer.remote.RetrofitClient
 import com.levelup.gamer.repository.CarritoRepository
 import com.levelup.gamer.repository.ProductoRepository
@@ -49,15 +46,13 @@ fun CarritoScreen(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // 1. INYECCIÓN DE DEPENDENCIAS (Evita el crash)
+    // 1. INYECCIÓN DE DEPENDENCIAS
     val retrofit = RetrofitClient.retrofit
     val carritoApi = retrofit.create(CarritoApi::class.java)
-    val productoApi = retrofit.create(ProductoApi::class.java)
-    val usuarioApi = retrofit.create(UsuarioApi::class.java)
 
     val carritoRepo = remember { CarritoRepository(carritoApi) }
-    val productoRepo = remember { ProductoRepository(productoApi) }
-    val sessionRepo = remember { SessionRepository(context, usuarioApi) }
+    val productoRepo = remember { ProductoRepository() }
+    val sessionRepo = remember { SessionRepository(context) } // CORREGIDO
 
     // 2. VIEWMODELS CON FACTORY
     val carritoVM: CarritoVM = viewModel(
@@ -273,7 +268,7 @@ fun CartSummary(
             if (descuento > 0) {
                 Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
                     Text("Descuento DUOC", color = CarritoGamerGreen)
-                    Text("-${precioFmt(descuento)}", color = CarritoGamerGreen)
+                    Text("-${"$"}${precioFmt(descuento)}", color = CarritoGamerGreen)
                 }
             }
 

@@ -23,8 +23,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.levelup.gamer.api.CarritoApi
-import com.levelup.gamer.api.ProductoApi
-import com.levelup.gamer.api.UsuarioApi
 import com.levelup.gamer.model.Producto
 import com.levelup.gamer.remote.RetrofitClient
 import com.levelup.gamer.repository.CarritoRepository
@@ -32,7 +30,6 @@ import com.levelup.gamer.repository.ProductoRepository
 import com.levelup.gamer.repository.SessionRepository
 import com.levelup.gamer.viewmodel.CarritoVM
 import com.levelup.gamer.viewmodel.ProductoVM
-import kotlinx.coroutines.launch
 
 // COLORES PRIVADOS (Solo visibles en este archivo)
 private val DetalleGamerGreen = Color(0xFF00FF00)
@@ -48,13 +45,11 @@ fun DetalleProductoScreen(
 
     // Dependencias
     val retrofit = RetrofitClient.retrofit
-    val productoApi = retrofit.create(ProductoApi::class.java)
     val carritoApi = retrofit.create(CarritoApi::class.java)
-    val usuarioApi = retrofit.create(UsuarioApi::class.java)
 
-    val productoRepo = remember { ProductoRepository(productoApi) }
+    val productoRepo = remember { ProductoRepository() }
     val carritoRepo = remember { CarritoRepository(carritoApi) }
-    val sessionRepo = remember { SessionRepository(context, usuarioApi) }
+    val sessionRepo = remember { SessionRepository(context) } // CORREGIDO
 
     // ViewModels
     val productoVM: ProductoVM = viewModel(factory = ProductoVM.Factory(productoRepo))

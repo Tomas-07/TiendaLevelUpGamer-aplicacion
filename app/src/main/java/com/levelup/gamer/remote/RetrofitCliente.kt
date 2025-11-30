@@ -9,20 +9,24 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitClient {
 
-    // 1. Configura el interceptor de logging
+    // Configura el interceptor de logging para depuración
     private val logging = HttpLoggingInterceptor().apply {
-        level = HttpLoggingInterceptor.Level.BODY // Muestra toda la información de la petición/respuesta
+        level = HttpLoggingInterceptor.Level.BODY
     }
 
-    // 2. Crea el cliente OkHttp y añade el interceptor
+    // Crea el cliente OkHttp y añade el interceptor
     private val client = OkHttpClient.Builder()
         .addInterceptor(logging)
         .build()
 
-    // 3. Crea la instancia de Retrofit
+    // Crea la instancia de Retrofit
     val retrofit: Retrofit = Retrofit.Builder()
-        .baseUrl("http://10.0.2.2:9090/api/") // <-- ¡¡esto despues se cambia con el aws con el video del profe fernando
+        // ¡IMPORTANTE! Esta es la IP pública de tu servidor AWS
+        .baseUrl("http://98.85.26.7:3000/")
         .client(client)
         .addConverterFactory(GsonConverterFactory.create())
         .build()
+
+    // Expone la API Service para ser usada en el resto de la app
+    val productoApi: ProductoApiService = retrofit.create(ProductoApiService::class.java)
 }

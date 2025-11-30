@@ -43,13 +43,12 @@ class CarritoVM(
             // 1. Cargar items del carrito (remoto)
             val remoto = carritoRepo.listar(userId)
 
-            // 2. Cargar catálogo completo de productos
-            val productos = productoRepo.all()
+            // 2. Cargar catálogo completo de productos - CORREGIDO
+            val productos = productoRepo.getAllProductos()
 
             // 3. Cruzar información (Match)
             val listaCombinada = remoto.mapNotNull { dto ->
                 // Buscamos el producto que coincida con el ID del item del carrito
-                // Usamos toLong() para asegurar que la comparación sea correcta
                 val prod = productos.find { it.id == dto.productoId }
 
                 if (prod != null) {

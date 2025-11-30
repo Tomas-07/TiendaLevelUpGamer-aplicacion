@@ -1,7 +1,5 @@
 package com.levelup.gamer.ui
 
-import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -11,11 +9,9 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.rememberNavController
-import com.levelup.gamer.api.ApiClient
 import com.levelup.gamer.api.CarritoApi
-import com.levelup.gamer.api.ProductoApi
-import com.levelup.gamer.api.UsuarioApi
 import com.levelup.gamer.navigation.AppNav
+import com.levelup.gamer.remote.RetrofitClient // Importamos el nuevo cliente
 import com.levelup.gamer.repository.CarritoRepository
 import com.levelup.gamer.repository.ProductoRepository
 import com.levelup.gamer.repository.SessionRepository
@@ -37,14 +33,13 @@ class MainActivity : ComponentActivity() {
                     // CONTEXTO
                     val ctx = LocalContext.current
 
-                    // APIs (Retrofit)
-                    val productoApi = ApiClient.create(ProductoApi::class.java)
-                    val usuarioApi  = ApiClient.create(UsuarioApi::class.java)
-                    val carritoApi  = ApiClient.create(CarritoApi::class.java)
+                    // APIs (Retrofit) - Usando el nuevo RetrofitClient centralizado
+                    val retrofit = RetrofitClient.retrofit
+                    val carritoApi  = retrofit.create(CarritoApi::class.java)
 
                     // REPOSITORIOS
-                    val productoRepo = remember { ProductoRepository(productoApi) }
-                    val sessionRepo  = remember { SessionRepository(ctx, usuarioApi) }
+                    val productoRepo = remember { ProductoRepository() }
+                    val sessionRepo  = remember { SessionRepository(ctx) } // CORREGIDO
                     val carritoRepo  = remember { CarritoRepository(carritoApi) }
 
                     // VIEWMODELS
@@ -52,7 +47,7 @@ class MainActivity : ComponentActivity() {
                     val usuarioVM  = remember { UsuarioVM(sessionRepo) }
                     val carritoVM  = remember { CarritoVM(carritoRepo, productoRepo, sessionRepo) }
 
-                    //  DEPENDENCIAS GLOBALES
+                    // DEPENDENCIAS GLOBALES
                     ProvideDeps(
                         Deps(
                             productoVM = productoVM,

@@ -14,9 +14,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.levelup.gamer.api.UsuarioApi
 import com.levelup.gamer.model.Usuario
-import com.levelup.gamer.remote.RetrofitClient
 import com.levelup.gamer.repository.SessionRepository
 import com.levelup.gamer.viewmodel.RegisterResult
 import com.levelup.gamer.viewmodel.UsuarioVM
@@ -30,8 +28,7 @@ fun RegisterScreen(
 
     // 1. Configuramos la Factory para que el ViewModel tenga Repositorio
     val factory = remember {
-        val api = RetrofitClient.retrofit.create(UsuarioApi::class.java)
-        val repository = SessionRepository(context, api)
+        val repository = SessionRepository(context)
         UsuarioVM.Factory(repository)
     }
     val vm: UsuarioVM = viewModel(factory = factory)

@@ -1,20 +1,24 @@
 package com.levelup.gamer.repository
 
-import com.levelup.gamer.api.ProductoApi
 import com.levelup.gamer.model.Producto
-import com.levelup.gamer.api.ApiClient // Asegúrate de tener esta clase para Retrofit
+import com.levelup.gamer.remote.RetrofitClient
 
-class ProductoRepository(
-    private val api: ProductoApi
-) {
+class ProductoRepository {
 
-    suspend fun all(): List<Producto> = api.listar()
+    // Usamos el cliente de Retrofit centralizado para obtener la instancia del servicio
+    private val productoApiService = RetrofitClient.productoApi
 
-    suspend fun get(id: Long): Producto = api.obtener(id)
+    /**
+     * Obtiene todos los productos desde el servidor.
+     * Llama a la función getProductos() definida en ProductoApiService.
+     */
+    suspend fun getAllProductos(): List<Producto> {
+        return productoApiService.getProductos()
+    }
 
-    suspend fun crear(p: Producto): Producto = api.crear(p)
-
-    suspend fun actualizar(id: Long, p: Producto): Producto = api.actualizar(id, p)
-
-    suspend fun eliminar(id: Long) = api.eliminar(id)
+    // Aquí puedes añadir más funciones del repositorio si las necesitas
+    // Por ejemplo, para obtener un producto por ID, etc.
+    // suspend fun getProductoById(id: Long): Producto {
+    //     return productoApiService.getProducto(id) // (Necesitarías añadir getProducto a tu ApiService)
+    // }
 }

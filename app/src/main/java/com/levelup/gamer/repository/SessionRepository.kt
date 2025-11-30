@@ -6,16 +6,20 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.levelup.gamer.api.UsuarioApi
 import com.levelup.gamer.model.Usuario
 import com.levelup.gamer.model.UsuarioDto
+import com.levelup.gamer.remote.RetrofitClient // Importamos el cliente centralizado
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import java.io.IOException
 
 private val Context.dataStore by preferencesDataStore("levelup_prefs")
 
 class SessionRepository(
-    private val context: Context,
-    private val api: UsuarioApi
+    private val context: Context
+    // El constructor ya no necesita que le pasen la API
 ) {
+    // Obtenemos la instancia de la API desde nuestro RetrofitClient
+    private val api: UsuarioApi = RetrofitClient.retrofit.create(UsuarioApi::class.java)
 
     companion object {
         val KEY_USER_ID = longPreferencesKey("user_id")
@@ -39,9 +43,6 @@ class SessionRepository(
     val referidoPor: Flow<String?> = context.dataStore.data.map { it[KEY_REFERIDO] }
     val photo: Flow<String?> = context.dataStore.data.map { it[KEY_PHOTO] }
 
-    // -------------------------------
-    // LOGIN REAL
-    // -------------------------------
     suspend fun login(email: String, password: String): Boolean {
         return try {
             val body = mapOf("email" to email, "password" to password)
@@ -51,15 +52,15 @@ class SessionRepository(
 
             saveUserInPrefs(response.body()!!)
             true
-
+        } catch (e: IOException) {
+            println("Error de red en login: ${e.message}")
+            false
         } catch (e: Exception) {
+            println("Error inesperado en login: ${e.message}")
             false
         }
     }
 
-    // -------------------------------
-    // REGISTER REAL
-    // -------------------------------
     suspend fun register(user: Usuario, password: String): Boolean {
         return try {
             val dto = UsuarioDto(
@@ -73,18 +74,17 @@ class SessionRepository(
                 nivel = user.nivel,
                 referidoPor = user.referidoPor
             )
-
             val response = api.register(dto)
-
             response.isSuccessful
+        } catch (e: IOException) {
+            println("Error de red en register: ${e.message}")
+            false
         } catch (e: Exception) {
+            println("Error inesperado en register: ${e.message}")
             false
         }
     }
 
-    // -------------------------------
-    // GUARDAR USUARIO DEL BACKEND
-    // -------------------------------
     private suspend fun saveUserInPrefs(user: Usuario) {
         context.dataStore.edit { p ->
             p[KEY_USER_ID] = user.id ?: 0L
@@ -94,7 +94,6 @@ class SessionRepository(
             p[KEY_DUOC] = user.esDuoc
             p[KEY_PUNTOS] = user.puntos
             p[KEY_NIVEL] = user.nivel
-
             user.referidoPor?.let { p[KEY_REFERIDO] = it }
         }
     }

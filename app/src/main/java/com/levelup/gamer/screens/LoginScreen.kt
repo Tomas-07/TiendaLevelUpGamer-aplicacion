@@ -9,8 +9,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.levelup.gamer.api.UsuarioApi
-import com.levelup.gamer.remote.RetrofitClient
 import com.levelup.gamer.repository.SessionRepository
 import com.levelup.gamer.viewmodel.UsuarioVM
 
@@ -24,10 +22,8 @@ fun LoginScreen(
 
     // 1. Configuramos la inyección de dependencias manual
     val factory = remember {
-        // Creamos la API usando Retrofit
-        val api = RetrofitClient.retrofit.create(UsuarioApi::class.java)
-        // Creamos el repositorio pasando Contexto y API
-        val repository = SessionRepository(context, api)
+        // Creamos el repositorio pasando solo el Contexto
+        val repository = SessionRepository(context)
         // Creamos la Factory del ViewModel
         UsuarioVM.Factory(repository)
     }
