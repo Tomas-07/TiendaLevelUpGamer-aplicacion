@@ -10,7 +10,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.rememberNavController
 import com.levelup.gamer.api.CarritoApi
+import com.levelup.gamer.api.UsuarioApi
 import com.levelup.gamer.navigation.AppNav
+import com.levelup.gamer.remote.ProductoApiService
 import com.levelup.gamer.remote.RetrofitClient // Importamos el nuevo cliente
 import com.levelup.gamer.repository.CarritoRepository
 import com.levelup.gamer.repository.ProductoRepository
@@ -36,10 +38,12 @@ class MainActivity : ComponentActivity() {
                     // APIs (Retrofit) - Usando el nuevo RetrofitClient centralizado
                     val retrofit = RetrofitClient.retrofit
                     val carritoApi  = retrofit.create(CarritoApi::class.java)
+                    val productoApi = retrofit.create(ProductoApiService::class.java)
+                    val usuarioApi = retrofit.create(UsuarioApi::class.java)
 
                     // REPOSITORIOS
-                    val productoRepo = remember { ProductoRepository() }
-                    val sessionRepo  = remember { SessionRepository(ctx) } // CORREGIDO
+                    val productoRepo = remember { ProductoRepository(productoApi) }
+                    val sessionRepo  = remember { SessionRepository(ctx, usuarioApi) } // CORREGIDO
                     val carritoRepo  = remember { CarritoRepository(carritoApi) }
 
                     // VIEWMODELS

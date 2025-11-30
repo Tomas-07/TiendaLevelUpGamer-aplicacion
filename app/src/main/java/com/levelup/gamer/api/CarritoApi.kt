@@ -5,7 +5,7 @@ import retrofit2.http.*
 
 interface CarritoApi {
 
-    // CORREGIDO: Quitamos el "api/" inicial porque ya está en la Base URL
+
 
     @GET("carrito/{usuarioId}")
     suspend fun getCarrito(@Path("usuarioId") userId: Long): List<CarritoItemDto>

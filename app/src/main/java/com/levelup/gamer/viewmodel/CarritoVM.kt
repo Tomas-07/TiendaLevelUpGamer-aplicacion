@@ -40,21 +40,21 @@ class CarritoVM(
                 return@launch
             }
 
-            // 1. Cargar items del carrito (remoto)
+
             val remoto = carritoRepo.listar(userId)
 
-            // 2. Cargar catálogo completo de productos - CORREGIDO
+
             val productos = productoRepo.getAllProductos()
 
-            // 3. Cruzar información (Match)
+
             val listaCombinada = remoto.mapNotNull { dto ->
-                // Buscamos el producto que coincida con el ID del item del carrito
+
                 val prod = productos.find { it.id == dto.productoId }
 
                 if (prod != null) {
                     CartItem(prod, dto.cantidad, dto.id!!)
                 } else {
-                    null // Si no encuentra el producto, lo ignora
+                    null
                 }
             }
 
@@ -76,7 +76,7 @@ class CarritoVM(
             } else {
                 carritoRepo.agregar(userId, p, 1)
             }
-            cargar() // Recargar lista
+            cargar()
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -116,7 +116,7 @@ class CarritoVM(
         }
     }
 
-    // Factory
+
     class Factory(
         private val carritoRepo: CarritoRepository,
         private val productoRepo: ProductoRepository,

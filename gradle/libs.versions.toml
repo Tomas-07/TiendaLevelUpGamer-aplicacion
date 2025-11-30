@@ -12,6 +12,7 @@ runtimeSaveable = "1.9.4"
 ui = "1.9.5"
 foundation = "1.9.5"
 uiText = "1.9.5"
+roomExternalAntlr = "2.8.4"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -32,6 +33,7 @@ androidx-compose-runtime-saveable = { group = "androidx.compose.runtime", name =
 androidx-ui = { group = "androidx.compose.ui", name = "ui", version.ref = "ui" }
 androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
 androidx-compose-ui-text = { group = "androidx.compose.ui", name = "ui-text", version.ref = "uiText" }
+androidx-room-external-antlr = { group = "androidx.room", name = "room-external-antlr", version.ref = "roomExternalAntlr" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

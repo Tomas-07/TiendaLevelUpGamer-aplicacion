@@ -9,21 +9,25 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.levelup.gamer.api.UsuarioApi
+import com.levelup.gamer.remote.RetrofitClient
 import com.levelup.gamer.repository.SessionRepository
 import com.levelup.gamer.viewmodel.UsuarioVM
 
 @Composable
 fun LoginScreen(
     onGoRegister: () -> Unit,
-    onGoCart: () -> Unit,
-    onLogin: () -> Unit // Callback para cuando el login es exitoso
+    onLogin: () -> Unit,
+    onGoCart: () -> Unit // Mantengo el parámetro por consistencia, aunque no se use aquí
 ) {
     val context = LocalContext.current
 
     // 1. Configuramos la inyección de dependencias manual
     val factory = remember {
-        // Creamos el repositorio pasando solo el Contexto
-        val repository = SessionRepository(context)
+        // Creamos la API usando nuestro cliente centralizado
+        val api = RetrofitClient.retrofit.create(UsuarioApi::class.java)
+        // Creamos el repositorio pasando el Contexto y la API
+        val repository = SessionRepository(context, api)
         // Creamos la Factory del ViewModel
         UsuarioVM.Factory(repository)
     }
@@ -32,8 +36,8 @@ fun LoginScreen(
     val vm: UsuarioVM = viewModel(factory = factory)
 
     // Estados locales para los campos de texto
-    val email = remember { mutableStateOf("") }
-    val password = remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -47,8 +51,8 @@ fun LoginScreen(
 
         // Campo para el correo electrónico
         OutlinedTextField(
-            value = email.value,
-            onValueChange = { email.value = it },
+            value = email,
+            onValueChange = { email = it },
             label = { Text("Correo electrónico") },
             modifier = Modifier.fillMaxWidth()
         )
@@ -57,8 +61,8 @@ fun LoginScreen(
 
         // Campo para la contraseña
         OutlinedTextField(
-            value = password.value,
-            onValueChange = { password.value = it },
+            value = password,
+            onValueChange = { password = it },
             label = { Text("Contraseña") },
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth()
@@ -69,7 +73,7 @@ fun LoginScreen(
         // Botón para iniciar sesión
         Button(
             onClick = {
-                vm.login(email.value, password.value) { ok ->
+                vm.login(email, password) { ok ->
                     if (ok) {
                         // Si el login es correcto, ejecutamos el callback
                         onLogin()

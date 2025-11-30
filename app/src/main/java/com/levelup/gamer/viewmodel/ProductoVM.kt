@@ -17,38 +17,35 @@ class ProductoVM(
     val productos = _productos.asStateFlow()
 
     init {
-        // Carga inicial de todos los productos
+
         viewModelScope.launch {
             try {
-                // Usamos el nuevo método del repositorio
+
                 _productos.value = repo.getAllProductos()
             } catch (e: Exception) {
-                // Manejar el error, por ejemplo, logueándolo
+
                 println("Error al cargar productos: ${e.message}")
             }
         }
     }
 
-    /**
-     * Busca un producto por su ID en la lista ya cargada.
-     * Si no está cargada, la obtiene del repositorio primero.
-     */
+
     suspend fun getProductoById(id: Long): Producto? {
-        // Si la lista de productos aún no se ha cargado, la cargamos primero
+
         if (_productos.value.isEmpty()) {
             try {
                 _productos.value = repo.getAllProductos()
             } catch (e: Exception) {
                 println("Error al cargar productos para búsqueda por ID: ${e.message}")
-                return null // Retorna null si hay un error al cargar
+                return null
             }
         }
-        // Busca el producto en la lista ya cargada en memoria
+
         return _productos.value.find { it.id == id }
     }
 
 
-    // Factory para crear la instancia del ViewModel con dependencias
+
     class Factory(private val repo: ProductoRepository) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(ProductoVM::class.java)) {

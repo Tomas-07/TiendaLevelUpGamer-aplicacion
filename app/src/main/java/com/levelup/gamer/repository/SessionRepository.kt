@@ -1,25 +1,32 @@
 package com.levelup.gamer.repository
 
 import android.content.Context
-import androidx.datastore.preferences.core.*
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.levelup.gamer.api.UsuarioApi
 import com.levelup.gamer.model.Usuario
 import com.levelup.gamer.model.UsuarioDto
-import com.levelup.gamer.remote.RetrofitClient // Importamos el cliente centralizado
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.io.IOException
 
-private val Context.dataStore by preferencesDataStore("levelup_prefs")
+// La extensión se mantiene para uso normal
+internal val Context.dataStore by preferencesDataStore("levelup_prefs")
 
 class SessionRepository(
-    private val context: Context
-    // El constructor ya no necesita que le pasen la API
+    private val context: Context,
+    private val api: UsuarioApi,
+    // CAMBIO CLAVE: Inyectamos el DataStore.
+    // Por defecto usa 'context.dataStore', así que NO rompe tu código existente en la app.
+    private val dataStore: DataStore<Preferences> = context.dataStore
 ) {
-    // Obtenemos la instancia de la API desde nuestro RetrofitClient
-    private val api: UsuarioApi = RetrofitClient.retrofit.create(UsuarioApi::class.java)
 
     companion object {
         val KEY_USER_ID = longPreferencesKey("user_id")
@@ -33,15 +40,16 @@ class SessionRepository(
         val KEY_PHOTO = stringPreferencesKey("photo_uri")
     }
 
-    val isLoggedIn: Flow<Boolean> = context.dataStore.data.map { it[KEY_EMAIL] != null }
-    val nombre: Flow<String> = context.dataStore.data.map { it[KEY_NAME] ?: "" }
-    val email: Flow<String> = context.dataStore.data.map { it[KEY_EMAIL] ?: "" }
-    val edad: Flow<Int> = context.dataStore.data.map { it[KEY_AGE] ?: 0 }
-    val esDuoc: Flow<Boolean> = context.dataStore.data.map { it[KEY_DUOC] ?: false }
-    val puntos: Flow<Int> = context.dataStore.data.map { it[KEY_PUNTOS] ?: 0 }
-    val nivel: Flow<Int> = context.dataStore.data.map { it[KEY_NIVEL] ?: 1 }
-    val referidoPor: Flow<String?> = context.dataStore.data.map { it[KEY_REFERIDO] }
-    val photo: Flow<String?> = context.dataStore.data.map { it[KEY_PHOTO] }
+    // AHORA USAMOS 'dataStore' (la variable de clase) en lugar de 'context.dataStore'
+    val isLoggedIn: Flow<Boolean> = dataStore.data.map { it[KEY_EMAIL] != null }
+    val nombre: Flow<String> = dataStore.data.map { it[KEY_NAME] ?: "" }
+    val email: Flow<String> = dataStore.data.map { it[KEY_EMAIL] ?: "" }
+    val edad: Flow<Int> = dataStore.data.map { it[KEY_AGE] ?: 0 }
+    val esDuoc: Flow<Boolean> = dataStore.data.map { it[KEY_DUOC] ?: false }
+    val puntos: Flow<Int> = dataStore.data.map { it[KEY_PUNTOS] ?: 0 }
+    val nivel: Flow<Int> = dataStore.data.map { it[KEY_NIVEL] ?: 1 }
+    val referidoPor: Flow<String?> = dataStore.data.map { it[KEY_REFERIDO] }
+    val photo: Flow<String?> = dataStore.data.map { it[KEY_PHOTO] }
 
     suspend fun login(email: String, password: String): Boolean {
         return try {
@@ -86,7 +94,7 @@ class SessionRepository(
     }
 
     private suspend fun saveUserInPrefs(user: Usuario) {
-        context.dataStore.edit { p ->
+        dataStore.edit { p -> // Usamos dataStore inyectado
             p[KEY_USER_ID] = user.id ?: 0L
             p[KEY_NAME] = user.nombre
             p[KEY_EMAIL] = user.email
@@ -99,16 +107,16 @@ class SessionRepository(
     }
 
     suspend fun currentUserId(): Long? {
-        val prefs = context.dataStore.data.first()
+        val prefs = dataStore.data.first() // Usamos dataStore inyectado
         return prefs[KEY_USER_ID]
     }
 
     suspend fun logout() {
-        context.dataStore.edit { it.clear() }
+        dataStore.edit { it.clear() } // Usamos dataStore inyectado
     }
 
     suspend fun addPuntos(delta: Int) {
-        context.dataStore.edit { p ->
+        dataStore.edit { p -> // Usamos dataStore inyectado
             val actual = p[KEY_PUNTOS] ?: 0
             val total = (actual + delta).coerceAtLeast(0)
             p[KEY_PUNTOS] = total
@@ -117,7 +125,7 @@ class SessionRepository(
     }
 
     suspend fun setPhoto(uri: String) {
-        context.dataStore.edit { p ->
+        dataStore.edit { p -> // Usamos dataStore inyectado
             p[KEY_PHOTO] = uri
         }
     }

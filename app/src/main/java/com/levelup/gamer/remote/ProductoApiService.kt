@@ -6,6 +6,6 @@ import com.levelup.gamer.model.Producto
 import retrofit2.http.GET
 
 interface ProductoApiService {
-    @GET("productos") // <-- CAMBIA "productos" por la ruta real de tu endpoint
+    @GET("productos")
     suspend fun getProductos(): List<Producto>
 }

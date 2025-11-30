@@ -20,21 +20,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import com.levelup.gamer.api.CarritoApi
-import com.levelup.gamer.remote.RetrofitClient
-import com.levelup.gamer.repository.CarritoRepository
-import com.levelup.gamer.repository.ProductoRepository
-import com.levelup.gamer.repository.SessionRepository
 import com.levelup.gamer.viewmodel.CartItem
-import com.levelup.gamer.viewmodel.CarritoVM
-import com.levelup.gamer.viewmodel.UsuarioVM
+// Importamos 'deps'
+import com.levelup.gamer.ui.deps
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
 
-// COLORES PRIVADOS PARA ESTA PANTALLA
 private val CarritoGamerGreen = Color(0xFF00FF00)
 private val CarritoDarkBackground = Color(0xFF121212)
 private val CarritoCardBackground = Color(0xFF1E1E1E)
@@ -42,27 +35,16 @@ private val CarritoCardBackground = Color(0xFF1E1E1E)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CarritoScreen(onBack: () -> Unit) {
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // 1. INYECCIÓN DE DEPENDENCIAS
-    val retrofit = RetrofitClient.retrofit
-    val carritoApi = retrofit.create(CarritoApi::class.java)
+    // --- CORRECCIÓN ---
+    // Usamos las dependencias del Main.
+    // Esto evita el error de constructor del SessionRepository y comparte el estado.
+    val deps = deps()
+    val carritoVM = deps.carritoVM
+    val usuarioVM = deps.usuarioVM
 
-    val carritoRepo = remember { CarritoRepository(carritoApi) }
-    val productoRepo = remember { ProductoRepository() }
-    val sessionRepo = remember { SessionRepository(context) } // CORREGIDO
-
-    // 2. VIEWMODELS CON FACTORY
-    val carritoVM: CarritoVM = viewModel(
-        factory = CarritoVM.Factory(carritoRepo, productoRepo, sessionRepo)
-    )
-    val usuarioVM: UsuarioVM = viewModel(
-        factory = UsuarioVM.Factory(sessionRepo)
-    )
-
-    // --- IMPORTANTE: Forzar carga al entrar ---
     LaunchedEffect(Unit) {
         carritoVM.cargar()
     }
@@ -152,7 +134,7 @@ fun CarritoScreen(onBack: () -> Unit) {
                     onPagar = {
                         if (total > 0) {
                             // Lógica de compra
-                            val puntos = (total / 1000) // 1 punto por cada $1000
+                            val puntos = (total / 1000) // 1 punto por cada $100
                             usuarioVM.addPuntos(puntos)
                             carritoVM.clear() // Vaciar carrito
                             scope.launch {
@@ -171,6 +153,7 @@ fun CarritoScreen(onBack: () -> Unit) {
     }
 }
 
+// ... Las funciones CartItemRow, CartSummary y precioFmt se mantienen igual ...
 @Composable
 fun CartItemRow(
     item: CartItem,

@@ -14,7 +14,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.levelup.gamer.api.UsuarioApi
 import com.levelup.gamer.model.Usuario
+import com.levelup.gamer.remote.RetrofitClient
 import com.levelup.gamer.repository.SessionRepository
 import com.levelup.gamer.viewmodel.RegisterResult
 import com.levelup.gamer.viewmodel.UsuarioVM
@@ -26,9 +28,9 @@ fun RegisterScreen(
 ) {
     val context = LocalContext.current
 
-    // 1. Configuramos la Factory para que el ViewModel tenga Repositorio
     val factory = remember {
-        val repository = SessionRepository(context)
+        val api = RetrofitClient.retrofit.create(UsuarioApi::class.java)
+        val repository = SessionRepository(context, api)
         UsuarioVM.Factory(repository)
     }
     val vm: UsuarioVM = viewModel(factory = factory)
@@ -66,11 +68,11 @@ fun RegisterScreen(
             value = nombre,
             onValueChange = {
                 nombre = it
-                if (nombreError != null) nombreError = null // Borrar error al escribir
+                if (nombreError != null) nombreError = null
             },
             label = { Text("Nombre completo") },
             modifier = Modifier.fillMaxWidth(),
-            isError = nombreError != null, // Borde rojo si hay error
+            isError = nombreError != null,
             supportingText = {
                 if (nombreError != null) Text(text = nombreError!!, color = MaterialTheme.colorScheme.error)
             }
@@ -100,7 +102,6 @@ fun RegisterScreen(
         OutlinedTextField(
             value = edad,
             onValueChange = {
-                // Solo permitir ingresar números
                 if (it.all { char -> char.isDigit() }) {
                     edad = it
                     if (edadError != null) edadError = null
@@ -156,16 +157,13 @@ fun RegisterScreen(
         // BOTÓN REGISTRAR
         Button(
             onClick = {
-                // --- VALIDACIONES LOCALES ---
                 var isValid = true
 
-                // Validar Nombre
                 if (nombre.isBlank()) {
                     nombreError = "El nombre es obligatorio"
                     isValid = false
                 }
 
-                // Validar Email
                 if (email.isBlank()) {
                     emailError = "El correo es obligatorio"
                     isValid = false
@@ -174,7 +172,6 @@ fun RegisterScreen(
                     isValid = false
                 }
 
-                // Validar Edad (Debe ser >= 18)
                 val edadInt = edad.toIntOrNull()
                 if (edadInt == null) {
                     edadError = "Ingresa tu edad"
@@ -184,7 +181,6 @@ fun RegisterScreen(
                     isValid = false
                 }
 
-                // Validar Password
                 if (password.length < 6) {
                     passwordError = "Mínimo 6 caracteres"
                     isValid = false
@@ -193,16 +189,13 @@ fun RegisterScreen(
                     isValid = false
                 }
 
-                // Validar Confirmación
                 if (confirm != password) {
                     confirmError = "Las contraseñas no coinciden"
                     isValid = false
                 }
 
-                // Si hay errores, detenemos la ejecución
                 if (!isValid) return@Button
 
-                // --- TODO OK: LLAMAMOS AL VIEWMODEL ---
                 isLoading = true
                 val user = Usuario(
                     id = null,
@@ -221,18 +214,17 @@ fun RegisterScreen(
                     when (result) {
                         is RegisterResult.Success -> {
                             Toast.makeText(context, result.message, Toast.LENGTH_SHORT).show()
-                            onRegister() // Navegar o volver
+                            onRegister()
                         }
 
                         is RegisterResult.Error -> {
-                            // Error que viene del backend (ej: correo ya existe)
                             Toast.makeText(context, result.message, Toast.LENGTH_LONG).show()
                         }
                     }
                 }
             },
             modifier = Modifier.fillMaxWidth(),
-            enabled = !isLoading // Deshabilitar botón mientras carga
+            enabled = !isLoading
         ) {
             if (isLoading) {
                 CircularProgressIndicator(
@@ -246,7 +238,6 @@ fun RegisterScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        // Botón para ir al Login
         TextButton(onClick = { onGoLogin() }, enabled = !isLoading) {
             Text("¿Ya tienes cuenta? Inicia sesión aquí")
         }
