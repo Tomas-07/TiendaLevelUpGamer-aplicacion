@@ -5,7 +5,7 @@ import retrofit2.http.*
 
 interface ProductoApi {
 
-    // CORREGIDO: Quitamos el "api/" porque ya está en el RetrofitClient
+
     @GET("productos")
     suspend fun listar(): List<Producto>
 

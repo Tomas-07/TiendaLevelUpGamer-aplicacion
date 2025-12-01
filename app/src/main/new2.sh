@@ -1,0 +1,1 @@
+sudo chmod +x /home/bstrdo/.nvm/versions/node/v24.11.1/bin/node

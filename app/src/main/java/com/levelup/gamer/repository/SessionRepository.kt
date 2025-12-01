@@ -1,7 +1,14 @@
 package com.levelup.gamer.repository
 
 import android.content.Context
-import androidx.datastore.preferences.core.*
+import android.util.Log
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.levelup.gamer.api.UsuarioApi
 import com.levelup.gamer.model.Usuario
@@ -9,12 +16,14 @@ import com.levelup.gamer.model.UsuarioDto
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import java.io.IOException
 
-private val Context.dataStore by preferencesDataStore("levelup_prefs")
+internal val Context.dataStore by preferencesDataStore("levelup_prefs")
 
 class SessionRepository(
     private val context: Context,
-    private val api: UsuarioApi
+    private val api: UsuarioApi,
+    private val dataStore: DataStore<Preferences> = context.dataStore
 ) {
 
     companion object {
@@ -29,40 +38,38 @@ class SessionRepository(
         val KEY_PHOTO = stringPreferencesKey("photo_uri")
     }
 
-    val isLoggedIn: Flow<Boolean> = context.dataStore.data.map { it[KEY_EMAIL] != null }
-    val nombre: Flow<String> = context.dataStore.data.map { it[KEY_NAME] ?: "" }
-    val email: Flow<String> = context.dataStore.data.map { it[KEY_EMAIL] ?: "" }
-    val edad: Flow<Int> = context.dataStore.data.map { it[KEY_AGE] ?: 0 }
-    val esDuoc: Flow<Boolean> = context.dataStore.data.map { it[KEY_DUOC] ?: false }
-    val puntos: Flow<Int> = context.dataStore.data.map { it[KEY_PUNTOS] ?: 0 }
-    val nivel: Flow<Int> = context.dataStore.data.map { it[KEY_NIVEL] ?: 1 }
-    val referidoPor: Flow<String?> = context.dataStore.data.map { it[KEY_REFERIDO] }
-    val photo: Flow<String?> = context.dataStore.data.map { it[KEY_PHOTO] }
+    val isLoggedIn: Flow<Boolean> = dataStore.data.map { it[KEY_EMAIL] != null }
+    val nombre: Flow<String> = dataStore.data.map { it[KEY_NAME] ?: "" }
+    val email: Flow<String> = dataStore.data.map { it[KEY_EMAIL] ?: "" }
+    val edad: Flow<Int> = dataStore.data.map { it[KEY_AGE] ?: 0 }
+    val esDuoc: Flow<Boolean> = dataStore.data.map { it[KEY_DUOC] ?: false }
+    val puntos: Flow<Int> = dataStore.data.map { it[KEY_PUNTOS] ?: 0 }
+    val nivel: Flow<Int> = dataStore.data.map { it[KEY_NIVEL] ?: 1 }
+    val referidoPor: Flow<String?> = dataStore.data.map { it[KEY_REFERIDO] }
+    val photo: Flow<String?> = dataStore.data.map { it[KEY_PHOTO] }
 
-    // -------------------------------
-    // LOGIN REAL
-    // -------------------------------
     suspend fun login(email: String, password: String): Boolean {
         return try {
             val body = mapOf("email" to email, "password" to password)
             val response = api.login(body)
 
-            if (!response.isSuccessful || response.body() == null) return false
+            if (!response.isSuccessful || response.body() == null) {
+                Log.e("API_LOGIN", "Login fallido: ${response.code()} - ${response.errorBody()?.string()}")
+                return false
+            }
 
             saveUserInPrefs(response.body()!!)
             true
-
         } catch (e: Exception) {
+            Log.e("API_LOGIN", "Error en login", e)
             false
         }
     }
 
-    // -------------------------------
-    // REGISTER REAL
-    // -------------------------------
     suspend fun register(user: Usuario, password: String): Boolean {
         return try {
             val dto = UsuarioDto(
+
                 id = null,
                 nombre = user.nombre,
                 email = user.email,
@@ -74,19 +81,26 @@ class SessionRepository(
                 referidoPor = user.referidoPor
             )
 
+            Log.d("API_REGISTER", "Enviando datos: $dto")
+
             val response = api.register(dto)
 
-            response.isSuccessful
+            if (!response.isSuccessful) {
+                // AQUÍ VERÁS EL ERROR REAL EN EL LOGCAT (pestaña Logcat abajo en Android Studio)
+                val errorMsg = response.errorBody()?.string() ?: "Error desconocido"
+                Log.e("API_REGISTER", "Error del servidor (${response.code()}): $errorMsg")
+                return false
+            }
+
+            true
         } catch (e: Exception) {
+            Log.e("API_REGISTER", "Error de conexión o código", e)
             false
         }
     }
 
-    // -------------------------------
-    // GUARDAR USUARIO DEL BACKEND
-    // -------------------------------
     private suspend fun saveUserInPrefs(user: Usuario) {
-        context.dataStore.edit { p ->
+        dataStore.edit { p ->
             p[KEY_USER_ID] = user.id ?: 0L
             p[KEY_NAME] = user.nombre
             p[KEY_EMAIL] = user.email
@@ -94,22 +108,18 @@ class SessionRepository(
             p[KEY_DUOC] = user.esDuoc
             p[KEY_PUNTOS] = user.puntos
             p[KEY_NIVEL] = user.nivel
-
             user.referidoPor?.let { p[KEY_REFERIDO] = it }
         }
     }
 
-    suspend fun currentUserId(): Long? {
-        val prefs = context.dataStore.data.first()
-        return prefs[KEY_USER_ID]
-    }
+    suspend fun currentUserId(): Long? = dataStore.data.first()[KEY_USER_ID]
 
     suspend fun logout() {
-        context.dataStore.edit { it.clear() }
+        dataStore.edit { it.clear() }
     }
 
     suspend fun addPuntos(delta: Int) {
-        context.dataStore.edit { p ->
+        dataStore.edit { p ->
             val actual = p[KEY_PUNTOS] ?: 0
             val total = (actual + delta).coerceAtLeast(0)
             p[KEY_PUNTOS] = total
@@ -118,9 +128,7 @@ class SessionRepository(
     }
 
     suspend fun setPhoto(uri: String) {
-        context.dataStore.edit { p ->
-            p[KEY_PHOTO] = uri
-        }
+        dataStore.edit { p -> p[KEY_PHOTO] = uri }
     }
 
     private fun calcNivel(p: Int): Int = when {

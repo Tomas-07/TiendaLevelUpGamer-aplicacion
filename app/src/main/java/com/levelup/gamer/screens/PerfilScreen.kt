@@ -1,17 +1,13 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
-
 package com.levelup.gamer.screens
 
-import android.app.Activity
 import android.content.Context
-import android.content.ContextWrapper
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.rememberScrollState // <--- NECESARIO PARA EL SCROLL
+import androidx.compose.foundation.verticalScroll     // <--- NECESARIO PARA EL SCROLL
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -22,18 +18,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import com.levelup.gamer.model.GameItem
+import com.levelup.gamer.remote.GameClient
 import com.levelup.gamer.ui.deps
 
-
-fun Context.getActivity(): Activity? = when (this) {
-    is Activity -> this
-    is ContextWrapper -> baseContext.getActivity()
-    else -> null
-}
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PerfilScreen(
     onBack: () -> Unit = {},
@@ -41,34 +35,44 @@ fun PerfilScreen(
 ) {
     val d = deps()
     val usuarioVM = d.usuarioVM
-
     val context = LocalContext.current
-    val activity = context.getActivity()
 
+    // --- ESTADOS DEL USUARIO ---
     val nombre by usuarioVM.nombre.collectAsState(initial = "")
     val email by usuarioVM.email.collectAsState(initial = "")
     val puntos by usuarioVM.puntos.collectAsState(initial = 0)
     val nivel by usuarioVM.nivel.collectAsState(initial = 1)
     val foto by usuarioVM.photoUri.collectAsState(initial = null)
 
+    // --- ESTADO PARA LA API DE JUEGOS ---
+    var juegoRecomendado by remember { mutableStateOf<GameItem?>(null) }
+    var cargandoJuego by remember { mutableStateOf(true) }
+
+    // Llamada a la API al iniciar
+    LaunchedEffect(Unit) {
+        try {
+            val juegos = GameClient.api.getGames()
+            juegoRecomendado = juegos.shuffled().firstOrNull()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        } finally {
+            cargandoJuego = false
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Mi Perfil", color = Color.White) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = null, tint = Color.White)
+                    IconButton(onClick = { onBack() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color.White)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent
-                ),
-                modifier = Modifier
-                    .background(
-                        Brush.horizontalGradient(
-                            listOf(Color(0xFF00E676), Color(0xFF00C853))
-                        )
-                    )
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                modifier = Modifier.background(
+                    Brush.horizontalGradient(listOf(Color(0xFF00E676), Color(0xFF00C853)))
+                )
             )
         }
     ) { padding ->
@@ -76,28 +80,30 @@ fun PerfilScreen(
         Column(
             modifier = Modifier
                 .padding(padding)
-                .fillMaxSize(),
+                .fillMaxSize()
+                // --- ¡AQUÍ ESTÁ LA SOLUCIÓN AL SCROLL! ---
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
             Spacer(Modifier.height(22.dp))
 
+            // FOTO DE PERFIL
             ProfilePhotoPicker(
-                initialPhotoUri = foto,
-                onPhotoChanged = { uri -> usuarioVM.setPhoto(uri) }
+                initialPhotoUri = foto?.let { Uri.parse(it) },
+                onPhotoChanged = { uri -> usuarioVM.setPhoto(uri.toString()) }
             )
 
             Spacer(Modifier.height(10.dp))
 
-            // TARJETA DE INFORMACIÓN
+            // INFO PERSONAL
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(horizontal = 16.dp),
                 shape = RoundedCornerShape(20.dp),
                 elevation = CardDefaults.cardElevation(8.dp)
             ) {
-
                 Column(
                     Modifier.padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
@@ -119,21 +125,76 @@ fun PerfilScreen(
                 }
             }
 
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(20.dp))
 
-            // BOTÓN SOPORTE
-            Button(
-                onClick = {
-                    if (activity != null) {
-                        openWhatsApp(
-                            number = "+56940525668",
-                            message = "Hola, necesito ayuda con mi cuenta LevelUp.",
-                            activity = activity as ComponentActivity
+            // SECCIÓN JUEGO RECOMENDADO
+            Text(
+                "🎮 Recomendado para ti",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(Modifier.height(8.dp))
+
+            if (cargandoJuego) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(30.dp),
+                    color = MaterialTheme.colorScheme.primary
+                )
+            } else if (juegoRecomendado != null) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF2D2D2D)),
+                    elevation = CardDefaults.cardElevation(6.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        AsyncImage(
+                            model = juegoRecomendado!!.thumbnail,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(80.dp)
+                                .clip(RoundedCornerShape(12.dp)),
+                            contentScale = ContentScale.Crop
                         )
-                    } else {
-                        Toast.makeText(context, "Error al abrir WhatsApp", Toast.LENGTH_SHORT).show()
+
+                        Spacer(Modifier.width(16.dp))
+
+                        Column {
+                            Text(
+                                text = juegoRecomendado!!.title,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = juegoRecomendado!!.genre,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color(0xFF00E676)
+                            )
+                            Text(
+                                text = "¡Disponible Gratis!",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.LightGray
+                            )
+                        }
                     }
-                },
+                }
+            } else {
+                Text("No hay recomendaciones hoy.", style = MaterialTheme.typography.bodySmall)
+            }
+
+            Spacer(Modifier.height(20.dp))
+
+            // BOTONES FINALES
+            Button(
+                onClick = { openWhatsAppSeguro(context, "+56940525668", "Hola, necesito ayuda.") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
@@ -144,11 +205,9 @@ fun PerfilScreen(
 
             Spacer(Modifier.height(8.dp))
 
-            // BOTÓN LOGOUT
             Button(
                 onClick = {
                     usuarioVM.logout()
-                    Toast.makeText(context, "Sesión cerrada", Toast.LENGTH_SHORT).show()
                     onLogout()
                 },
                 modifier = Modifier
@@ -161,6 +220,9 @@ fun PerfilScreen(
             ) {
                 Text("Cerrar sesión", fontWeight = FontWeight.Bold)
             }
+
+            // Espacio extra al final para que el scroll no corte el último botón
+            Spacer(Modifier.height(24.dp))
         }
     }
 }
@@ -170,21 +232,22 @@ fun DataRow(label: String, value: String) {
     Column {
         Text(label, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
         Text(value.ifBlank { "—" })
-        Divider(modifier = Modifier.padding(vertical = 6.dp))
+        HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
     }
 }
 
 private fun calcProgresoNivel(puntos: Int): Float = when {
     puntos >= 1000 -> 1f
-    puntos >= 600 -> (puntos - 600) / 400f
-    puntos >= 300 -> (puntos - 300) / 300f
-    puntos >= 120 -> (puntos - 120) / 180f
-    else -> puntos / 120f
+    else -> puntos / 1000f
 }
 
-fun openWhatsApp(number: String, message: String, activity: ComponentActivity) {
-    val uri = Uri.parse("https://wa.me/$number?text=" + Uri.encode(message))
-    val intent = Intent(Intent.ACTION_VIEW, uri)
-    activity.startActivity(intent)
+fun openWhatsAppSeguro(context: Context, number: String, message: String) {
+    try {
+        val uri = Uri.parse("https://wa.me/$number?text=" + Uri.encode(message))
+        val intent = Intent(Intent.ACTION_VIEW, uri)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(intent)
+    } catch (e: Exception) {
+        Toast.makeText(context, "Error al abrir WhatsApp", Toast.LENGTH_SHORT).show()
+    }
 }
-

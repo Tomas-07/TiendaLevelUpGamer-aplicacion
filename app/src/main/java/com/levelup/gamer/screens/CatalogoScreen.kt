@@ -22,21 +22,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import com.levelup.gamer.api.CarritoApi
-import com.levelup.gamer.api.ProductoApi
-import com.levelup.gamer.api.UsuarioApi
 import com.levelup.gamer.model.Producto
-import com.levelup.gamer.remote.RetrofitClient
-import com.levelup.gamer.repository.CarritoRepository
-import com.levelup.gamer.repository.ProductoRepository
-import com.levelup.gamer.repository.SessionRepository
-import com.levelup.gamer.viewmodel.CarritoVM
-import com.levelup.gamer.viewmodel.ProductoVM
-import kotlinx.coroutines.launch
+// IMPORTANTE: Importamos 'deps' para acceder a los ViewModels del Main
+import com.levelup.gamer.ui.deps
 
-// Colores privados para evitar conflicto
 private val CatalogoGreen = Color(0xFF00FF00)
 private val CatalogoDark = Color(0xFF121212)
 private val CatalogoCard = Color(0xFF1E1E1E)
@@ -50,17 +40,12 @@ fun CatalogoScreen(
 ) {
     val context = LocalContext.current
 
-    val retrofit = RetrofitClient.retrofit
-    val productoApi = retrofit.create(ProductoApi::class.java)
-    val carritoApi = retrofit.create(CarritoApi::class.java)
-    val usuarioApi = retrofit.create(UsuarioApi::class.java)
-
-    val productoRepo = remember { ProductoRepository(productoApi) }
-    val carritoRepo = remember { CarritoRepository(carritoApi) }
-    val sessionRepo = remember { SessionRepository(context, usuarioApi) }
-
-    val productoVM: ProductoVM = viewModel(factory = ProductoVM.Factory(productoRepo))
-    val carritoVM: CarritoVM = viewModel(factory = CarritoVM.Factory(carritoRepo, productoRepo, sessionRepo))
+    // --- CORRECCIÓN ---
+    // En lugar de crear todo de nuevo, usamos los ViewModels inyectados desde MainActivity.
+    // Esto arregla los errores de constructor y mantiene los datos del carrito sincronizados.
+    val deps = deps()
+    val productoVM = deps.productoVM
+    val carritoVM = deps.carritoVM
 
     val productos by productoVM.productos.collectAsState()
     val cartItems by carritoVM.items.collectAsState()
@@ -119,7 +104,6 @@ fun CatalogoScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     contentPadding = PaddingValues(bottom = 80.dp)
                 ) {
-                    // CORRECCIÓN IMPORTANTE: Agregamos 'key' para que la lista sea estable y no repita items
                     items(
                         items = productos,
                         key = { it.id }

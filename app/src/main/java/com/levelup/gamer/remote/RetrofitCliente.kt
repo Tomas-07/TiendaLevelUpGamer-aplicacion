@@ -1,5 +1,3 @@
-// app/src/main/java/com/levelup/gamer/remote/RetrofitClient.kt
-
 package com.levelup.gamer.remote
 
 import okhttp3.OkHttpClient
@@ -9,20 +7,20 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitClient {
 
-    // 1. Configura el interceptor de logging
     private val logging = HttpLoggingInterceptor().apply {
-        level = HttpLoggingInterceptor.Level.BODY // Muestra toda la información de la petición/respuesta
+        level = HttpLoggingInterceptor.Level.BODY
     }
 
-    // 2. Crea el cliente OkHttp y añade el interceptor
     private val client = OkHttpClient.Builder()
         .addInterceptor(logging)
         .build()
 
-    // 3. Crea la instancia de Retrofit
     val retrofit: Retrofit = Retrofit.Builder()
-        .baseUrl("http://10.0.2.2:9090/api/") // <-- ¡¡esto despues se cambia con el aws con el video del profe fernando
+        //  Añadido el prefijo "/api/" que espera el backend
+        .baseUrl("http://13.222.9.63:9090/api/")
         .client(client)
         .addConverterFactory(GsonConverterFactory.create())
         .build()
+
+    val productoApi: ProductoApiService = retrofit.create(ProductoApiService::class.java)
 }

@@ -1,19 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.levelup.gamer">
 
-    <!--  Permisos: deben ir AQUÍ (como hijos de <manifest>) -->
     <uses-feature
         android:name="android.hardware.camera"
         android:required="false" />
+
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.INTERNET" />
 
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-
-    <uses-permission
-        android:name="android.permission.READ_EXTERNAL_STORAGE"
-        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
 
     <application
         android:allowBackup="true"
@@ -21,9 +19,9 @@
         android:label="LevelUp Gamer"
         android:supportsRtl="true"
         android:theme="@style/Theme.Material3.Dark.NoActionBar"
-        android:usesCleartextTraffic="true">
+        android:usesCleartextTraffic="true"
+        tools:targetApi="31">
 
-        <!-- Actividad principal -->
         <activity
             android:name=".ui.MainActivity"
             android:exported="true">
@@ -33,10 +31,9 @@
             </intent-filter>
         </activity>
 
-        <!-- FileProvider para Cámara (obligatorio si tomas fotos a archivo) -->
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="${applicationId}.fileprovider"
+            android:authorities="${applicationId}.provider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data
@@ -45,4 +42,5 @@
         </provider>
 
     </application>
+
 </manifest>

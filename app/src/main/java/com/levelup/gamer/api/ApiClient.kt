@@ -7,7 +7,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 object ApiClient {
 
-    private const val BASE_URL = "http://10.0.2.2:9090/"
+    private const val BASE_URL = "http://98.85.26.7:3000/"
 
     // emulador
 

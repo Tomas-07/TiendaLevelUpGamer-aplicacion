@@ -23,18 +23,16 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.levelup.gamer.api.CarritoApi
-import com.levelup.gamer.api.ProductoApi
 import com.levelup.gamer.api.UsuarioApi
 import com.levelup.gamer.model.Producto
+import com.levelup.gamer.remote.ProductoApiService
 import com.levelup.gamer.remote.RetrofitClient
 import com.levelup.gamer.repository.CarritoRepository
 import com.levelup.gamer.repository.ProductoRepository
 import com.levelup.gamer.repository.SessionRepository
 import com.levelup.gamer.viewmodel.CarritoVM
 import com.levelup.gamer.viewmodel.ProductoVM
-import kotlinx.coroutines.launch
 
-// COLORES PRIVADOS (Solo visibles en este archivo)
 private val DetalleGamerGreen = Color(0xFF00FF00)
 private val DetalleDarkBackground = Color(0xFF121212)
 
@@ -46,9 +44,9 @@ fun DetalleProductoScreen(
 ) {
     val context = LocalContext.current
 
-    // Dependencias
+    // --- DEPENDENCIAS CREADAS LOCALMENTE ---
     val retrofit = RetrofitClient.retrofit
-    val productoApi = retrofit.create(ProductoApi::class.java)
+    val productoApi = retrofit.create(ProductoApiService::class.java)
     val carritoApi = retrofit.create(CarritoApi::class.java)
     val usuarioApi = retrofit.create(UsuarioApi::class.java)
 
@@ -56,15 +54,15 @@ fun DetalleProductoScreen(
     val carritoRepo = remember { CarritoRepository(carritoApi) }
     val sessionRepo = remember { SessionRepository(context, usuarioApi) }
 
-    // ViewModels
+    // --- VIEWMODELS ---
     val productoVM: ProductoVM = viewModel(factory = ProductoVM.Factory(productoRepo))
     val carritoVM: CarritoVM = viewModel(factory = CarritoVM.Factory(carritoRepo, productoRepo, sessionRepo))
 
-    // Estados
+    // --- ESTADOS DE LA UI ---
     var producto by remember { mutableStateOf<Producto?>(null) }
     var isLoading by remember { mutableStateOf(true) }
 
-    // Carga inicial
+    // Cargamos el producto usando el ViewModel
     LaunchedEffect(id) {
         isLoading = true
         producto = productoVM.getProductoById(id)
