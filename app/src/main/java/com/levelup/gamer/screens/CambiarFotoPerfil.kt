@@ -40,16 +40,16 @@ fun ProfilePhotoPicker(
     var showDialog by remember { mutableStateOf(false) }
     var tempPhotoUri by remember { mutableStateOf<Uri?>(null) }
 
-    // --- LAUNCHERS PARA ABRIR CÁMARA Y GALERÍA ---
 
-    // Launcher para la galería (Foto ya existente)
+
+
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let { onPhotoChanged(it) }
     }
 
-    // Launcher para la cámara (Foto nueva)
+
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
     ) { success ->
@@ -58,12 +58,12 @@ fun ProfilePhotoPicker(
         }
     }
 
-    // Launcher para pedir permiso de cámara
+
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            // Si da permiso, creamos el archivo temporal y abrimos la cámara
+
             tempPhotoUri = createImageFile(context)
             cameraLauncher.launch(tempPhotoUri!!)
         } else {
@@ -72,7 +72,7 @@ fun ProfilePhotoPicker(
     }
 
     Box(contentAlignment = Alignment.BottomEnd) {
-        // --- FOTO DE PERFIL (EL CÍRCULO GRANDE) ---
+
         Box(
             modifier = Modifier
                 .size(130.dp)
@@ -100,7 +100,7 @@ fun ProfilePhotoPicker(
             }
         }
 
-        // --- ICONO DE CÁMARA PEQUEÑO ---
+        //  ICONO DE CÁMARA PEQUEÑO
         Box(
             modifier = Modifier
                 .size(40.dp)
@@ -115,7 +115,7 @@ fun ProfilePhotoPicker(
         }
     }
 
-    // --- DIÁLOGO DE OPCIONES ---
+    //  DIÁLOGO DE OPCIONES
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
@@ -133,12 +133,12 @@ fun ProfilePhotoPicker(
                     TextButton(
                         onClick = {
                             showDialog = false
-                            // Revisa si tenemos permiso de cámara
+
                             if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
                                 tempPhotoUri = createImageFile(context)
                                 cameraLauncher.launch(tempPhotoUri!!)
                             } else {
-                                // Si no, lo pide
+
                                 permissionLauncher.launch(Manifest.permission.CAMERA)
                             }
                         }
@@ -157,7 +157,7 @@ fun ProfilePhotoPicker(
     }
 }
 
-// --- FUNCIÓN AUXILIAR PARA CREAR ARCHIVOS TEMPORALES ---
+
 private fun createImageFile(context: Context): Uri {
     val storageDir: File? = context.getExternalFilesDir(null)
     val file = File.createTempFile(
@@ -166,7 +166,7 @@ private fun createImageFile(context: Context): Uri {
         storageDir
     )
 
-    // Usamos FileProvider para que sea seguro en Android modernos
+
     return FileProvider.getUriForFile(
         context,
         "${context.packageName}.provider",

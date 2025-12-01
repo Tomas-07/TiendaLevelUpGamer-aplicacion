@@ -9,5 +9,5 @@ data class Usuario(
     val puntos: Int = 0,
     val nivel: Int = 1,
     val esDuoc: Boolean = false,
-    val password: String
+    val password: String? = null
 )

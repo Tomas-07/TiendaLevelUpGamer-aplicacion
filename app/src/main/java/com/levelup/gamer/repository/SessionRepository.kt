@@ -12,11 +12,10 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.levelup.gamer.api.UsuarioApi
 import com.levelup.gamer.model.Usuario
-import com.levelup.gamer.model.UsuarioDto
+// Adios UsuarioDto import
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import java.io.IOException
 
 internal val Context.dataStore by preferencesDataStore("levelup_prefs")
 
@@ -54,7 +53,7 @@ class SessionRepository(
             val response = api.login(body)
 
             if (!response.isSuccessful || response.body() == null) {
-                Log.e("API_LOGIN", "Login fallido: ${response.code()} - ${response.errorBody()?.string()}")
+                Log.e("API_LOGIN", "Login fallido: ${response.code()}")
                 return false
             }
 
@@ -68,25 +67,15 @@ class SessionRepository(
 
     suspend fun register(user: Usuario, password: String): Boolean {
         return try {
-            val dto = UsuarioDto(
 
-                id = null,
-                nombre = user.nombre,
-                email = user.email,
-                edad = user.edad,
-                password = password,
-                esDuoc = user.esDuoc,
-                puntos = user.puntos,
-                nivel = user.nivel,
-                referidoPor = user.referidoPor
-            )
+            val usuarioParaEnviar = user.copy(password = password)
 
-            Log.d("API_REGISTER", "Enviando datos: $dto")
+            Log.d("API_REGISTER", "Enviando datos: $usuarioParaEnviar")
 
-            val response = api.register(dto)
+
+            val response = api.register(usuarioParaEnviar)
 
             if (!response.isSuccessful) {
-                // AQUÍ VERÁS EL ERROR REAL EN EL LOGCAT (pestaña Logcat abajo en Android Studio)
                 val errorMsg = response.errorBody()?.string() ?: "Error desconocido"
                 Log.e("API_REGISTER", "Error del servidor (${response.code()}): $errorMsg")
                 return false

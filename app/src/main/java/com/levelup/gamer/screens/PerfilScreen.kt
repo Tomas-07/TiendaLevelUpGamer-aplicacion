@@ -6,8 +6,8 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState // <--- NECESARIO PARA EL SCROLL
-import androidx.compose.foundation.verticalScroll     // <--- NECESARIO PARA EL SCROLL
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -37,14 +37,14 @@ fun PerfilScreen(
     val usuarioVM = d.usuarioVM
     val context = LocalContext.current
 
-    // --- ESTADOS DEL USUARIO ---
+
     val nombre by usuarioVM.nombre.collectAsState(initial = "")
     val email by usuarioVM.email.collectAsState(initial = "")
     val puntos by usuarioVM.puntos.collectAsState(initial = 0)
     val nivel by usuarioVM.nivel.collectAsState(initial = 1)
     val foto by usuarioVM.photoUri.collectAsState(initial = null)
 
-    // --- ESTADO PARA LA API DE JUEGOS ---
+
     var juegoRecomendado by remember { mutableStateOf<GameItem?>(null) }
     var cargandoJuego by remember { mutableStateOf(true) }
 
@@ -81,7 +81,7 @@ fun PerfilScreen(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
-                // --- ¡AQUÍ ESTÁ LA SOLUCIÓN AL SCROLL! ---
+
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -192,7 +192,7 @@ fun PerfilScreen(
 
             Spacer(Modifier.height(20.dp))
 
-            // BOTONES FINALES
+
             Button(
                 onClick = { openWhatsAppSeguro(context, "+56940525668", "Hola, necesito ayuda.") },
                 modifier = Modifier
@@ -221,7 +221,7 @@ fun PerfilScreen(
                 Text("Cerrar sesión", fontWeight = FontWeight.Bold)
             }
 
-            // Espacio extra al final para que el scroll no corte el último botón
+
             Spacer(Modifier.height(24.dp))
         }
     }

@@ -19,7 +19,7 @@ class UsuarioVM(private val session: SessionRepository) : ViewModel() {
 
     val isLoggedIn = session.isLoggedIn.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
-    // Estados para lectura (si los necesitas en otra pantalla)
+
     val nombre   = session.nombre.stateIn(viewModelScope, SharingStarted.Eagerly, "")
     val email    = session.email.stateIn(viewModelScope, SharingStarted.Eagerly, "")
     val edad     = session.edad.stateIn(viewModelScope, SharingStarted.Eagerly, 0)

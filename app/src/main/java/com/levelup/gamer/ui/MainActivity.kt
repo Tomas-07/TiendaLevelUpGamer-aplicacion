@@ -29,29 +29,29 @@ class MainActivity : ComponentActivity() {
             LevelUpTheme {
                 Surface {
 
-                    // NAV CONTROLLER
+
                     val nav = rememberNavController()
 
-                    // CONTEXTO
+
                     val ctx = LocalContext.current
 
-                    // APIs (Retrofit) - Usando el nuevo RetrofitClient centralizado
+
                     val retrofit = RetrofitClient.retrofit
                     val carritoApi  = retrofit.create(CarritoApi::class.java)
                     val productoApi = retrofit.create(ProductoApiService::class.java)
                     val usuarioApi = retrofit.create(UsuarioApi::class.java)
 
-                    // REPOSITORIOS
+
                     val productoRepo = remember { ProductoRepository(productoApi) }
                     val sessionRepo  = remember { SessionRepository(ctx, usuarioApi) } // CORREGIDO
                     val carritoRepo  = remember { CarritoRepository(carritoApi) }
 
-                    // VIEWMODELS
+
                     val productoVM = remember { ProductoVM(productoRepo) }
                     val usuarioVM  = remember { UsuarioVM(sessionRepo) }
                     val carritoVM  = remember { CarritoVM(carritoRepo, productoRepo, sessionRepo) }
 
-                    // DEPENDENCIAS GLOBALES
+
                     ProvideDeps(
                         Deps(
                             productoVM = productoVM,

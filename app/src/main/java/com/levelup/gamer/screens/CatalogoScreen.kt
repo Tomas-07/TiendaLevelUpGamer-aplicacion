@@ -24,7 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.levelup.gamer.model.Producto
-// IMPORTANTE: Importamos 'deps' para acceder a los ViewModels del Main
+
 import com.levelup.gamer.ui.deps
 
 private val CatalogoGreen = Color(0xFF00FF00)
@@ -40,9 +40,7 @@ fun CatalogoScreen(
 ) {
     val context = LocalContext.current
 
-    // --- CORRECCIÓN ---
-    // En lugar de crear todo de nuevo, usamos los ViewModels inyectados desde MainActivity.
-    // Esto arregla los errores de constructor y mantiene los datos del carrito sincronizados.
+
     val deps = deps()
     val productoVM = deps.productoVM
     val carritoVM = deps.carritoVM

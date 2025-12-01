@@ -35,7 +35,7 @@ fun RegisterScreen(
     }
     val vm: UsuarioVM = viewModel(factory = factory)
 
-    // Estados de los campos
+
     var nombre by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var edad by remember { mutableStateOf("") }
@@ -49,14 +49,14 @@ fun RegisterScreen(
     var passwordError by remember { mutableStateOf<String?>(null) }
     var confirmError by remember { mutableStateOf<String?>(null) }
 
-    // Estado de carga
+
     var isLoading by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(20.dp)
-            .verticalScroll(rememberScrollState()), // Permite scroll
+            .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.Center
     ) {
         Text(text = "Crear cuenta", style = MaterialTheme.typography.headlineMedium)

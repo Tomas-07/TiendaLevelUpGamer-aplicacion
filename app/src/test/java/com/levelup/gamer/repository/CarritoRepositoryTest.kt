@@ -1,9 +1,10 @@
 package com.levelup.gamer.repository
 
 import com.levelup.gamer.api.CarritoApi
-import com.levelup.gamer.model.CarritoItemDto
+import com.levelup.gamer.model.CarritoRequest
+import com.levelup.gamer.model.CarritoResponse
 import com.levelup.gamer.model.Producto
-import io.mockk.MockKAnnotations // Import necesario para iniciar MockK
+import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.coJustRun
 import io.mockk.coVerify
@@ -14,13 +15,10 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
+import retrofit2.Response
 
 @ExperimentalCoroutinesApi
 class CarritoRepositoryTest {
-
-    // 1. ELIMINAMOS LA REGLA QUE DABA ERROR
-    // @get:Rule
-    // val mockkRule = MockKRule(this)
 
     @RelaxedMockK
     private lateinit var carritoApi: CarritoApi
@@ -29,60 +27,76 @@ class CarritoRepositoryTest {
 
     @Before
     fun setUp() {
-        // 2. INICIAMOS MOCKK MANUALMENTE AQUÍ
         MockKAnnotations.init(this)
-
         carritoRepository = CarritoRepository(carritoApi)
     }
 
     @Test
-    fun `listar - cuando la API devuelve una lista - debe retornar la misma lista`() = runTest {
-
+    fun `listar - debe retornar lista de CarritoResponse (IDs)`() = runTest {
+       
         val listaFalsa = listOf(
-            CarritoItemDto(1, 1L, 101L, 2),
-            CarritoItemDto(2, 1L, 102L, 5)
+            CarritoResponse(id = 1, usuarioId = 1L, productoId = 101L, cantidad = 2),
+            CarritoResponse(id = 2, usuarioId = 1L, productoId = 102L, cantidad = 5)
         )
+
+
         coEvery { carritoApi.getCarrito(1L) } returns listaFalsa
 
         val resultado = carritoRepository.listar(1L)
 
+
         assertEquals(2, resultado.size)
-        assertEquals(listaFalsa, resultado)
+        assertEquals(101L, resultado[0].productoId)
     }
 
     @Test
-    fun `agregar - debe llamar a la API con el DTO correcto`() = runTest {
+    fun `agregar - debe convertir Producto a CarritoRequest (IDs) y enviarlo`() = runTest {
 
-        val productoDePrueba = Producto(101L, "P001", "Test", "Test Prod", 100, "", "", 10, false, 0f, 0)
+        val productoDePrueba = Producto(101L, "P001", "Test", "Test", 100, "", "", 10, false, 0f, 0)
         val usuarioId = 1L
         val cantidad = 3
-        val slot = slot<CarritoItemDto>()
 
-        // 3. CORRECCIÓN DEL ERROR "TYPE MISMATCH":
-        // El error decía que la API espera devolver un CarritoItemDto, pero tú devolvías Unit.
-        // Aquí le decimos que devuelva el mismo objeto que capturó (o uno nuevo).
-        coEvery { carritoApi.add(capture(slot)) } answers { slot.captured }
+
+        val slot = slot<CarritoRequest>()
+
+
+        coEvery { carritoApi.add(capture(slot)) } returns Response.success(Any())
+
 
         carritoRepository.agregar(usuarioId, productoDePrueba, cantidad)
 
+
         coVerify(exactly = 1) { carritoApi.add(any()) }
 
-        assertEquals(usuarioId, slot.captured.usuarioId)
+
         assertEquals(productoDePrueba.id, slot.captured.productoId)
+        assertEquals(usuarioId, slot.captured.usuarioId)
         assertEquals(cantidad, slot.captured.cantidad)
     }
 
     @Test
-    fun `eliminar - debe llamar a la API con el ID correcto`() = runTest {
+    fun `eliminar - debe llamar a delete`() = runTest {
+        coEvery { carritoApi.delete(42L) } returns Response.success(Unit)
+        carritoRepository.eliminar(42L)
+        coVerify(exactly = 1) { carritoApi.delete(42L) }
+    }
 
-        val itemIdParaBorrar = 42L
+    @Test
+    fun `actualizarCantidad - debe llamar a updateQuantity`() = runTest {
 
-        // coJustRun se usa cuando la función retorna Unit (Void).
-        // Si aquí no te da error, significa que delete() sí retorna Unit.
-        coJustRun { carritoApi.delete(itemIdParaBorrar) }
+        coEvery { carritoApi.updateQuantity(10L, 5) } returns Response.success(Any())
 
-        carritoRepository.eliminar(itemIdParaBorrar)
+        carritoRepository.actualizarCantidad(10L, 5)
 
-        coVerify(exactly = 1) { carritoApi.delete(itemIdParaBorrar) }
+        coVerify { carritoApi.updateQuantity(10L, 5) }
+    }
+
+    @Test
+    fun `vaciar - debe llamar a clearCart`() = runTest {
+        coEvery { carritoApi.clearCart(1L) } returns Response.success(Unit)
+
+        carritoRepository.vaciar(1L)
+
+        coVerify { carritoApi.clearCart(1L) }
     }
 }

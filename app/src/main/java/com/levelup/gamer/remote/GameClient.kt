@@ -6,7 +6,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 
 interface FreeToGameApi {
-    // Pedimos juegos de PC tipo "Shooter" para que la lista no sea gigante
+
     @GET("games?category=shooter")
     suspend fun getGames(): List<GameItem>
 }

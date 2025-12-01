@@ -18,24 +18,23 @@ import com.levelup.gamer.viewmodel.UsuarioVM
 fun LoginScreen(
     onGoRegister: () -> Unit,
     onLogin: () -> Unit,
-    onGoCart: () -> Unit // Mantengo el parámetro por consistencia, aunque no se use aquí
+    onGoCart: () -> Unit
 ) {
     val context = LocalContext.current
 
-    // 1. Configuramos la inyección de dependencias manual
     val factory = remember {
-        // Creamos la API usando nuestro cliente centralizado
+
         val api = RetrofitClient.retrofit.create(UsuarioApi::class.java)
-        // Creamos el repositorio pasando el Contexto y la API
+
         val repository = SessionRepository(context, api)
-        // Creamos la Factory del ViewModel
+
         UsuarioVM.Factory(repository)
     }
 
-    // 2. Obtenemos el ViewModel usando la factory
+
     val vm: UsuarioVM = viewModel(factory = factory)
 
-    // Estados locales para los campos de texto
+
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
@@ -75,7 +74,7 @@ fun LoginScreen(
             onClick = {
                 vm.login(email, password) { ok ->
                     if (ok) {
-                        // Si el login es correcto, ejecutamos el callback
+
                         onLogin()
                     } else {
                         Toast.makeText(
@@ -93,7 +92,7 @@ fun LoginScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        // Botón para ir a la pantalla de registro
+
         TextButton(onClick = { onGoRegister() }) {
             Text("¿No tienes cuenta? Regístrate aquí")
         }
