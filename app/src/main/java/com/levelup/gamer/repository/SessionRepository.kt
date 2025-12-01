@@ -1,6 +1,7 @@
 package com.levelup.gamer.repository
 
 import android.content.Context
+import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -17,14 +18,11 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.io.IOException
 
-// La extensión se mantiene para uso normal
 internal val Context.dataStore by preferencesDataStore("levelup_prefs")
 
 class SessionRepository(
     private val context: Context,
     private val api: UsuarioApi,
-    // CAMBIO CLAVE: Inyectamos el DataStore.
-    // Por defecto usa 'context.dataStore', así que NO rompe tu código existente en la app.
     private val dataStore: DataStore<Preferences> = context.dataStore
 ) {
 
@@ -40,7 +38,6 @@ class SessionRepository(
         val KEY_PHOTO = stringPreferencesKey("photo_uri")
     }
 
-    // AHORA USAMOS 'dataStore' (la variable de clase) en lugar de 'context.dataStore'
     val isLoggedIn: Flow<Boolean> = dataStore.data.map { it[KEY_EMAIL] != null }
     val nombre: Flow<String> = dataStore.data.map { it[KEY_NAME] ?: "" }
     val email: Flow<String> = dataStore.data.map { it[KEY_EMAIL] ?: "" }
@@ -56,15 +53,15 @@ class SessionRepository(
             val body = mapOf("email" to email, "password" to password)
             val response = api.login(body)
 
-            if (!response.isSuccessful || response.body() == null) return false
+            if (!response.isSuccessful || response.body() == null) {
+                Log.e("API_LOGIN", "Login fallido: ${response.code()} - ${response.errorBody()?.string()}")
+                return false
+            }
 
             saveUserInPrefs(response.body()!!)
             true
-        } catch (e: IOException) {
-            println("Error de red en login: ${e.message}")
-            false
         } catch (e: Exception) {
-            println("Error inesperado en login: ${e.message}")
+            Log.e("API_LOGIN", "Error en login", e)
             false
         }
     }
@@ -72,6 +69,7 @@ class SessionRepository(
     suspend fun register(user: Usuario, password: String): Boolean {
         return try {
             val dto = UsuarioDto(
+
                 id = null,
                 nombre = user.nombre,
                 email = user.email,
@@ -82,19 +80,27 @@ class SessionRepository(
                 nivel = user.nivel,
                 referidoPor = user.referidoPor
             )
+
+            Log.d("API_REGISTER", "Enviando datos: $dto")
+
             val response = api.register(dto)
-            response.isSuccessful
-        } catch (e: IOException) {
-            println("Error de red en register: ${e.message}")
-            false
+
+            if (!response.isSuccessful) {
+                // AQUÍ VERÁS EL ERROR REAL EN EL LOGCAT (pestaña Logcat abajo en Android Studio)
+                val errorMsg = response.errorBody()?.string() ?: "Error desconocido"
+                Log.e("API_REGISTER", "Error del servidor (${response.code()}): $errorMsg")
+                return false
+            }
+
+            true
         } catch (e: Exception) {
-            println("Error inesperado en register: ${e.message}")
+            Log.e("API_REGISTER", "Error de conexión o código", e)
             false
         }
     }
 
     private suspend fun saveUserInPrefs(user: Usuario) {
-        dataStore.edit { p -> // Usamos dataStore inyectado
+        dataStore.edit { p ->
             p[KEY_USER_ID] = user.id ?: 0L
             p[KEY_NAME] = user.nombre
             p[KEY_EMAIL] = user.email
@@ -106,17 +112,14 @@ class SessionRepository(
         }
     }
 
-    suspend fun currentUserId(): Long? {
-        val prefs = dataStore.data.first() // Usamos dataStore inyectado
-        return prefs[KEY_USER_ID]
-    }
+    suspend fun currentUserId(): Long? = dataStore.data.first()[KEY_USER_ID]
 
     suspend fun logout() {
-        dataStore.edit { it.clear() } // Usamos dataStore inyectado
+        dataStore.edit { it.clear() }
     }
 
     suspend fun addPuntos(delta: Int) {
-        dataStore.edit { p -> // Usamos dataStore inyectado
+        dataStore.edit { p ->
             val actual = p[KEY_PUNTOS] ?: 0
             val total = (actual + delta).coerceAtLeast(0)
             p[KEY_PUNTOS] = total
@@ -125,9 +128,7 @@ class SessionRepository(
     }
 
     suspend fun setPhoto(uri: String) {
-        dataStore.edit { p -> // Usamos dataStore inyectado
-            p[KEY_PHOTO] = uri
-        }
+        dataStore.edit { p -> p[KEY_PHOTO] = uri }
     }
 
     private fun calcNivel(p: Int): Int = when {

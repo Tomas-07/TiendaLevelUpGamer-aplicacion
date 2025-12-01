@@ -12,13 +12,11 @@ import com.levelup.gamer.screens.PerfilScreen
 import com.levelup.gamer.screens.RegisterScreen
 import com.levelup.gamer.screens.SplashRoute
 
-
 @Composable
 fun AppNav(nav: NavHostController) {
 
     NavHost(
         navController = nav,
-
         startDestination = Route.Splash.name
     ) {
         // Pantalla Splash
@@ -29,12 +27,11 @@ fun AppNav(nav: NavHostController) {
         // Pantalla Login
         composable(Route.Login.name) {
             LoginScreen(
-
                 onGoCart = { nav.navigate(Route.Carrito.name) },
                 onGoRegister = { nav.navigate(Route.Register.name) },
                 onLogin = {
                     nav.navigate(Route.Catalogo.name) {
-                        // Se utiliza .name para la ruta de popUpTo.
+
                         popUpTo(Route.Login.name) { inclusive = true }
                     }
                 }
@@ -44,7 +41,6 @@ fun AppNav(nav: NavHostController) {
         // Pantalla Register
         composable(Route.Register.name) {
             RegisterScreen(
-
                 onGoLogin = { nav.navigate(Route.Login.name) },
                 onRegister = { nav.popBackStack() }
             )
@@ -53,10 +49,8 @@ fun AppNav(nav: NavHostController) {
         // Pantalla Catalogo
         composable(Route.Catalogo.name) {
             CatalogoScreen(
-
                 onGoCart = { nav.navigate(Route.Carrito.name) },
                 onGoPerfil = { nav.navigate(Route.Perfil.name) },
-
                 onGoDetail = { id -> nav.navigate("detalle/$id") }
             )
         }
@@ -78,9 +72,11 @@ fun AppNav(nav: NavHostController) {
         // Pantalla Perfil
         composable(Route.Perfil.name) {
             PerfilScreen(
+
+                onBack = { nav.popBackStack() },
+
                 onLogout = {
                     nav.navigate(Route.Login.name) {
-
                         popUpTo(Route.Catalogo.name) { inclusive = true }
                     }
                 }
