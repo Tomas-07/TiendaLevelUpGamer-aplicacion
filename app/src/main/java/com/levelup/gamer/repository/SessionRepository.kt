@@ -12,7 +12,6 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.levelup.gamer.api.UsuarioApi
 import com.levelup.gamer.model.Usuario
-// Adios UsuarioDto import
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -67,11 +66,8 @@ class SessionRepository(
 
     suspend fun register(user: Usuario, password: String): Boolean {
         return try {
-
             val usuarioParaEnviar = user.copy(password = password)
-
             Log.d("API_REGISTER", "Enviando datos: $usuarioParaEnviar")
-
 
             val response = api.register(usuarioParaEnviar)
 
@@ -80,7 +76,6 @@ class SessionRepository(
                 Log.e("API_REGISTER", "Error del servidor (${response.code()}): $errorMsg")
                 return false
             }
-
             true
         } catch (e: Exception) {
             Log.e("API_REGISTER", "Error de conexión o código", e)
@@ -118,6 +113,23 @@ class SessionRepository(
 
     suspend fun setPhoto(uri: String) {
         dataStore.edit { p -> p[KEY_PHOTO] = uri }
+    }
+
+
+    suspend fun eliminarCuenta(): Boolean {
+        return try {
+            val id = currentUserId() ?: return false
+            val response = api.eliminar(id)
+
+            if (response.isSuccessful) {
+                logout()
+                return true
+            }
+            false
+        } catch (e: Exception) {
+            Log.e("SESSION", "Error al eliminar cuenta", e)
+            false
+        }
     }
 
     private fun calcNivel(p: Int): Int = when {

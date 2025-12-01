@@ -27,6 +27,7 @@ import com.levelup.gamer.model.GameItem
 import com.levelup.gamer.remote.GameClient
 import com.levelup.gamer.ui.deps
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PerfilScreen(
@@ -35,8 +36,9 @@ fun PerfilScreen(
 ) {
     val d = deps()
     val usuarioVM = d.usuarioVM
-    val context = LocalContext.current
 
+
+    val context = LocalContext.current
 
     val nombre by usuarioVM.nombre.collectAsState(initial = "")
     val email by usuarioVM.email.collectAsState(initial = "")
@@ -44,11 +46,12 @@ fun PerfilScreen(
     val nivel by usuarioVM.nivel.collectAsState(initial = 1)
     val foto by usuarioVM.photoUri.collectAsState(initial = null)
 
-
     var juegoRecomendado by remember { mutableStateOf<GameItem?>(null) }
     var cargandoJuego by remember { mutableStateOf(true) }
 
-    // Llamada a la API al iniciar
+    // Estado para Alerta
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
         try {
             val juegos = GameClient.api.getGames()
@@ -81,14 +84,11 @@ fun PerfilScreen(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
-
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
             Spacer(Modifier.height(22.dp))
 
-            // FOTO DE PERFIL
             ProfilePhotoPicker(
                 initialPhotoUri = foto?.let { Uri.parse(it) },
                 onPhotoChanged = { uri -> usuarioVM.setPhoto(uri.toString()) }
@@ -96,30 +96,20 @@ fun PerfilScreen(
 
             Spacer(Modifier.height(10.dp))
 
-            // INFO PERSONAL
             Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 shape = RoundedCornerShape(20.dp),
                 elevation = CardDefaults.cardElevation(8.dp)
             ) {
-                Column(
-                    Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
+                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     Text("Información Personal", style = MaterialTheme.typography.titleMedium)
-
                     DataRow("Nombre", nombre)
                     DataRow("Email", email)
                     DataRow("Nivel", "Nivel $nivel")
                     DataRow("Puntos acumulados", "$puntos pts")
-
                     LinearProgressIndicator(
                         progress = calcProgresoNivel(puntos),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 6.dp),
+                        modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
                         color = Color(0xFF00C853)
                     )
                 }
@@ -127,102 +117,85 @@ fun PerfilScreen(
 
             Spacer(Modifier.height(20.dp))
 
-            // SECCIÓN JUEGO RECOMENDADO
-            Text(
-                "🎮 Recomendado para ti",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold
-            )
-
+            Text("🎮 Recomendado para ti", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
 
             if (cargandoJuego) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(30.dp),
-                    color = MaterialTheme.colorScheme.primary
-                )
+                CircularProgressIndicator(modifier = Modifier.size(30.dp))
             } else if (juegoRecomendado != null) {
                 Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF2D2D2D)),
-                    elevation = CardDefaults.cardElevation(6.dp)
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF2D2D2D))
                 ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                    Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                         AsyncImage(
-                            model = juegoRecomendado!!.thumbnail,
-                            contentDescription = null,
-                            modifier = Modifier
-                                .size(80.dp)
-                                .clip(RoundedCornerShape(12.dp)),
-                            contentScale = ContentScale.Crop
+                            model = juegoRecomendado!!.thumbnail, contentDescription = null,
+                            modifier = Modifier.size(80.dp).clip(RoundedCornerShape(12.dp)), contentScale = ContentScale.Crop
                         )
-
                         Spacer(Modifier.width(16.dp))
-
                         Column {
-                            Text(
-                                text = juegoRecomendado!!.title,
-                                style = MaterialTheme.typography.titleMedium,
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = juegoRecomendado!!.genre,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color(0xFF00E676)
-                            )
-                            Text(
-                                text = "¡Disponible Gratis!",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color.LightGray
-                            )
+                            Text(juegoRecomendado!!.title, style = MaterialTheme.typography.titleMedium, color = Color.White)
+                            Text(juegoRecomendado!!.genre, style = MaterialTheme.typography.bodySmall, color = Color(0xFF00E676))
                         }
                     }
                 }
-            } else {
-                Text("No hay recomendaciones hoy.", style = MaterialTheme.typography.bodySmall)
             }
 
             Spacer(Modifier.height(20.dp))
 
-
-            Button(
-                onClick = { openWhatsAppSeguro(context, "+56940525668", "Hola, necesito ayuda.") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                shape = RoundedCornerShape(14.dp)
-            ) {
-                Text("Contactar Soporte", fontWeight = FontWeight.SemiBold)
+            Button(onClick = { openWhatsAppSeguro(context, "+56940525668", "Hola, necesito ayuda.") }, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), shape = RoundedCornerShape(14.dp)) {
+                Text("Contactar Soporte")
             }
-
             Spacer(Modifier.height(8.dp))
 
             Button(
-                onClick = {
-                    usuarioVM.logout()
-                    onLogout()
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
+                onClick = { usuarioVM.logout(); onLogout() },
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
-                )
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)
             ) {
-                Text("Cerrar sesión", fontWeight = FontWeight.Bold)
+                Text("Cerrar sesión")
+            }
+            Spacer(Modifier.height(8.dp))
+
+            // BOTÓN ROJO CORREGIDO
+            Button(
+                onClick = { showDeleteDialog = true },
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+            ) {
+                Text("ELIMINAR CUENTA", fontWeight = FontWeight.Bold, color = Color.White)
             }
 
-
             Spacer(Modifier.height(24.dp))
+        }
+
+
+        if (showDeleteDialog) {
+            AlertDialog(
+                onDismissRequest = { showDeleteDialog = false },
+                title = { Text("¿Eliminar Cuenta?") },
+                text = { Text("Esta acción es irreversible. Se borrarán todos tus datos.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showDeleteDialog = false
+
+                            usuarioVM.eliminarCuenta {
+
+                                onLogout()
+                            }
+                        }
+                    ) {
+                        Text("SÍ, BORRAR", color = Color.Red, fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteDialog = false }) { Text("Cancelar") }
+                }
+            )
         }
     }
 }

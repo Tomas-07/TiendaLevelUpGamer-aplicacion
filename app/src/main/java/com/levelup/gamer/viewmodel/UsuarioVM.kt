@@ -17,9 +17,8 @@ sealed class RegisterResult {
 
 class UsuarioVM(private val session: SessionRepository) : ViewModel() {
 
+    // Estados de la sesión (Observables por la UI)
     val isLoggedIn = session.isLoggedIn.stateIn(viewModelScope, SharingStarted.Eagerly, false)
-
-
     val nombre   = session.nombre.stateIn(viewModelScope, SharingStarted.Eagerly, "")
     val email    = session.email.stateIn(viewModelScope, SharingStarted.Eagerly, "")
     val edad     = session.edad.stateIn(viewModelScope, SharingStarted.Eagerly, 0)
@@ -29,8 +28,7 @@ class UsuarioVM(private val session: SessionRepository) : ViewModel() {
     val referido = session.referidoPor.stateIn(viewModelScope, SharingStarted.Eagerly, null)
     val photoUri = session.photo.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-
-
+    // --- VALIDACIONES DE NEGOCIO ---
 
     private fun validarNombre(nombre: String): String? =
         if (nombre.isBlank()) "El nombre no puede estar vacío" else null
@@ -51,11 +49,10 @@ class UsuarioVM(private val session: SessionRepository) : ViewModel() {
     private fun validarConfirmacion(pass: String, confirm: String): String? =
         if (pass != confirm) "Las contraseñas no coinciden" else null
 
-    // VALIDACIÓN DE EDAD: MAYOR O IGUAL A 18
     private fun validarEdad(edad: Int): String? =
         if (edad < 18) "Debes ser mayor de 18 años para registrarte" else null
 
-
+    // --- FUNCIONES PRINCIPALES ---
 
     fun registerUser(
         usuario: Usuario,
@@ -64,19 +61,18 @@ class UsuarioVM(private val session: SessionRepository) : ViewModel() {
         callback: (RegisterResult) -> Unit
     ) {
         viewModelScope.launch {
-
-            // Validaciones de seguridad antes de enviar
+            // 1. Validaciones
             validarNombre(usuario.nombre)?.let { return@launch callback(RegisterResult.Error(it)) }
             validarEmail(usuario.email)?.let { return@launch callback(RegisterResult.Error(it)) }
             validarEdad(usuario.edad)?.let { return@launch callback(RegisterResult.Error(it)) }
             validarPassword(password)?.let { return@launch callback(RegisterResult.Error(it)) }
             validarConfirmacion(password, confirmPass)?.let { return@launch callback(RegisterResult.Error(it)) }
 
-            //  Verificar si es correo DUOC
+            // 2. Lógica Duoc
             val esDuoc = usuario.email.trim().lowercase().endsWith("@duoc.cl")
             val usuarioFinal = usuario.copy(esDuoc = esDuoc)
 
-            //  Enviar registro al backend
+            // 3. Llamada al Repo
             val ok = session.register(usuarioFinal, password)
 
             if (!ok) {
@@ -88,15 +84,11 @@ class UsuarioVM(private val session: SessionRepository) : ViewModel() {
         }
     }
 
-
-
     fun login(email: String, password: String, onResult: (Boolean) -> Unit) =
         viewModelScope.launch {
             val ok = session.login(email, password)
             onResult(ok)
         }
-
-
 
     fun addPuntos(delta: Int) = viewModelScope.launch { session.addPuntos(delta) }
 
@@ -105,6 +97,14 @@ class UsuarioVM(private val session: SessionRepository) : ViewModel() {
     fun logout() = viewModelScope.launch { session.logout() }
 
 
+    fun eliminarCuenta(onSuccess: () -> Unit) = viewModelScope.launch {
+        val exito = session.eliminarCuenta()
+        if (exito) {
+            onSuccess()
+        }
+    }
+
+    // --- FACTORY ---
     class Factory(private val sessionRepository: SessionRepository) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
