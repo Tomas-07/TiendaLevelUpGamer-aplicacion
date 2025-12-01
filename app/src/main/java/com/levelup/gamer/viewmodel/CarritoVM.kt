@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
+// Modelo para la UI (Este sí tiene el Producto completo)
 data class CartItem(
     val producto: Producto,
     val cantidad: Int,
@@ -36,46 +37,51 @@ class CarritoVM(
         try {
             val userId = sessionRepo.currentUserId()
             if (userId == null) {
-                Log.e("CarritoVM", "Usuario no logueado")
                 return@launch
             }
 
+            // 1. Obtenemos los IDs del servidor (CarritoResponse)
+            val listaRemota = carritoRepo.listar(userId)
 
-            val remoto = carritoRepo.listar(userId)
+            // 2. Obtenemos el catálogo de productos
+            val todosLosProductos = productoRepo.getAllProductos()
 
+            // 3. CRUZAMOS LA INFORMACIÓN (Match)
+            val listaFinal = listaRemota.mapNotNull { itemRemoto ->
+                // Buscamos el producto real usando el ID que mandó el servidor
+                val productoReal = todosLosProductos.find { it.id == itemRemoto.productoId }
 
-            val productos = productoRepo.getAllProductos()
-
-
-            val listaCombinada = remoto.mapNotNull { dto ->
-
-                val prod = productos.find { it.id == dto.productoId }
-
-                if (prod != null) {
-                    CartItem(prod, dto.cantidad, dto.id!!)
+                if (productoReal != null) {
+                    CartItem(
+                        producto = productoReal,
+                        cantidad = itemRemoto.cantidad,
+                        itemId = itemRemoto.id
+                    )
                 } else {
-                    null
+                    null // Si el producto no existe, lo ignoramos
                 }
             }
 
-            _items.value = listaCombinada
-            Log.d("CarritoVM", "Carrito cargado: ${listaCombinada.size} elementos")
+            _items.value = listaFinal
+            Log.d("CarritoVM", "Carrito cargado: ${listaFinal.size} productos")
 
         } catch (e: Exception) {
             e.printStackTrace()
-            Log.e("CarritoVM", "Error cargando carrito: ${e.message}")
         }
     }
 
     fun add(p: Producto) = viewModelScope.launch {
         val userId = sessionRepo.currentUserId() ?: return@launch
         try {
+            // Buscamos si ya está en la lista visual
             val existing = _items.value.find { it.producto.id == p.id }
+
             if (existing != null) {
                 carritoRepo.actualizarCantidad(existing.itemId, existing.cantidad + 1)
             } else {
                 carritoRepo.agregar(userId, p, 1)
             }
+            // Recargamos todo para ver los cambios
             cargar()
         } catch (e: Exception) {
             e.printStackTrace()
@@ -115,7 +121,6 @@ class CarritoVM(
             e.printStackTrace()
         }
     }
-
 
     class Factory(
         private val carritoRepo: CarritoRepository,

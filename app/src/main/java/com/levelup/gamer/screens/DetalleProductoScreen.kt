@@ -44,7 +44,7 @@ fun DetalleProductoScreen(
 ) {
     val context = LocalContext.current
 
-    // --- DEPENDENCIAS CREADAS LOCALMENTE ---
+
     val retrofit = RetrofitClient.retrofit
     val productoApi = retrofit.create(ProductoApiService::class.java)
     val carritoApi = retrofit.create(CarritoApi::class.java)
@@ -54,15 +54,15 @@ fun DetalleProductoScreen(
     val carritoRepo = remember { CarritoRepository(carritoApi) }
     val sessionRepo = remember { SessionRepository(context, usuarioApi) }
 
-    // --- VIEWMODELS ---
+
     val productoVM: ProductoVM = viewModel(factory = ProductoVM.Factory(productoRepo))
     val carritoVM: CarritoVM = viewModel(factory = CarritoVM.Factory(carritoRepo, productoRepo, sessionRepo))
 
-    // --- ESTADOS DE LA UI ---
+
     var producto by remember { mutableStateOf<Producto?>(null) }
     var isLoading by remember { mutableStateOf(true) }
 
-    // Cargamos el producto usando el ViewModel
+
     LaunchedEffect(id) {
         isLoading = true
         producto = productoVM.getProductoById(id)

@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.levelup.gamer.viewmodel.CartItem
-// Importamos 'deps'
+
 import com.levelup.gamer.ui.deps
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
@@ -38,9 +38,7 @@ fun CarritoScreen(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // --- CORRECCIÓN ---
-    // Usamos las dependencias del Main.
-    // Esto evita el error de constructor del SessionRepository y comparte el estado.
+
     val deps = deps()
     val carritoVM = deps.carritoVM
     val usuarioVM = deps.usuarioVM
@@ -133,10 +131,10 @@ fun CarritoScreen(onBack: () -> Unit) {
                     total = total,
                     onPagar = {
                         if (total > 0) {
-                            // Lógica de compra
-                            val puntos = (total / 1000) // 1 punto por cada $100
+
+                            val puntos = (total / 100) //
                             usuarioVM.addPuntos(puntos)
-                            carritoVM.clear() // Vaciar carrito
+                            carritoVM.clear()
                             scope.launch {
                                 snackbarHostState.showSnackbar("¡Compra exitosa! Ganaste $puntos puntos.")
                             }
@@ -153,7 +151,7 @@ fun CarritoScreen(onBack: () -> Unit) {
     }
 }
 
-// ... Las funciones CartItemRow, CartSummary y precioFmt se mantienen igual ...
+
 @Composable
 fun CartItemRow(
     item: CartItem,

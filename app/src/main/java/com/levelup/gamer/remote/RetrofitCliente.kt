@@ -16,7 +16,7 @@ object RetrofitClient {
         .build()
 
     val retrofit: Retrofit = Retrofit.Builder()
-        //  Añadido el prefijo "/api/" que espera el backend
+
         .baseUrl("http://13.222.9.63:9090/api/")
         .client(client)
         .addConverterFactory(GsonConverterFactory.create())
