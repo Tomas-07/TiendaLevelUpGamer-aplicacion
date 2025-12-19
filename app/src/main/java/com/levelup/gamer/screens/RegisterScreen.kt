@@ -96,6 +96,7 @@ fun RegisterScreen(
             }
         )
 
+
         Spacer(Modifier.height(8.dp))
 
         // 3. EDAD

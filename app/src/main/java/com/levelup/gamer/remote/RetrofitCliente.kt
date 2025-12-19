@@ -15,12 +15,10 @@ object RetrofitClient {
         .addInterceptor(logging)
         .build()
 
-    val retrofit: Retrofit = Retrofit.Builder()
 
-        .baseUrl("http://13.222.9.63:9090/api/")
+    val retrofit: Retrofit = Retrofit.Builder()
+        .baseUrl("http://10.0.2.2:9090/api/")
         .client(client)
         .addConverterFactory(GsonConverterFactory.create())
         .build()
-
-    val productoApi: ProductoApiService = retrofit.create(ProductoApiService::class.java)
 }
